@@ -56,8 +56,8 @@ export function validateRegistryDraft(draft: RegistryDraft): RegistryDraft {
     const age = clean(draft.age, 3)
     const contactName = clean(draft.contactName, 120)
 
-    if (!CEDULA_RE.test(cedula)) throw new Error("Revisa el formato de la cedula.")
-    if (!/^[0-9]{1,3}$/.test(age) || Number(age) > 120) {
+    if (cedula && !CEDULA_RE.test(cedula)) throw new Error("Revisa el formato de la cedula.")
+    if (age && (!/^[0-9]{1,3}$/.test(age) || Number(age) > 120)) {
       throw new Error("Indica una edad valida.")
     }
     if (!contactName) throw new Error("Indica el familiar o contacto responsable.")

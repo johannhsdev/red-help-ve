@@ -194,12 +194,12 @@ export function RegisterDialog({
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="cedula">Cédula</Label>
-                    <Input id="cedula" name="cedula" required placeholder="V-12.345.678" />
+                    <Label htmlFor="cedula">Cédula (opcional)</Label>
+                    <Input id="cedula" name="cedula" placeholder="V-12.345.678" />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="age">Edad</Label>
-                    <Input id="age" name="age" type="number" min="0" required placeholder="35" />
+                    <Label htmlFor="age">Edad (opcional)</Label>
+                    <Input id="age" name="age" type="number" min="0" placeholder="35" />
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">

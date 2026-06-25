@@ -118,8 +118,8 @@ export function draftToPersonInsert(draft: Extract<RegistryDraft, { type: "perso
   return {
     name: draft.name,
     photo_url: photoUrl,
-    national_id: draft.cedula,
-    age: Number(draft.age),
+    national_id: draft.cedula || null,
+    age: draft.age ? Number(draft.age) : null,
     last_seen_location: draft.notes ?? draft.location,
     reporter_name: draft.contactName,
     notes: draft.notes ?? null,
