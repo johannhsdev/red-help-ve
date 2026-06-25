@@ -1,0 +1,114 @@
+import { AlertTriangle, HeartHandshake, MapPinned, ShieldCheck, UsersRound } from "lucide-react"
+import { RegistryView } from "./components/RegistryView"
+import { useRegistry } from "./hooks/useRegistry"
+
+function App() {
+  const registry = useRegistry()
+  const missingCount = registry.records.filter(
+    (record) => record.type === "persons" && record.status === "missing",
+  ).length
+  const foundCount = registry.records.filter(
+    (record) => record.type === "persons" && record.status === "found",
+  ).length
+  const centerCount = registry.records.filter((record) => record.type === "centers").length
+  const stats = [
+    {
+      label: "Personas desaparecidas",
+      value: missingCount,
+      icon: UsersRound,
+      tone: "text-amber-400",
+    },
+    {
+      label: "Personas encontradas",
+      value: foundCount,
+      icon: ShieldCheck,
+      tone: "text-emerald-400",
+    },
+    {
+      label: "Centros de acopio",
+      value: centerCount,
+      icon: MapPinned,
+      tone: "text-sky-400",
+    },
+  ]
+
+  return (
+    <div className="min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
+      <header className="border-b border-[var(--border)] bg-[#151515]">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-10 sm:px-6">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#f4f4f5] text-[#191919]">
+              <HeartHandshake className="size-5 stroke-[2.25]" aria-hidden="true" />
+            </span>
+            <div>
+              <h1 className="text-[1.45rem] font-extrabold leading-none tracking-[-0.01em] text-white sm:text-2xl">
+                Red de Ayuda - Terremoto en Venezuela
+              </h1>
+              <p className="mt-1 text-[0.875rem] leading-none text-[#b7c0cc]">
+                Personas desaparecidas y centros de acopio
+              </p>
+              <p className="mt-2 text-xs font-medium leading-none text-[#8f98a3]">
+                Desarrollado por{" "}
+                <a
+                  href="https://slasdevelopments.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#d7dce3] underline-offset-4 transition-colors hover:text-white hover:underline"
+                >
+                  Slas Developments
+                </a>{" "}
+                /{" "}
+                <a
+                  href="https://www.instagram.com/johannhs.dev/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#d7dce3] underline-offset-4 transition-colors hover:text-white hover:underline"
+                >
+                  Johann Salas
+                </a>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-[10px] border border-white/[0.025] bg-[#171717] px-3.5 py-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.012)]">
+            <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-500" aria-hidden="true" />
+            <p className="text-pretty text-sm font-medium leading-relaxed text-white">
+              Tras el <strong>sismo que vivimos ayer en Venezuela</strong>, habilitamos esta
+              plataforma pública y gratuita como apoyo informativo para toda la comunidad. Aquí
+              puedes <strong>reportar y buscar personas desaparecidas</strong> y ubicar los{" "}
+              <strong>centros de acopio</strong> donde recibir o llevar ayuda. Usa el buscador para
+              filtrar en tiempo real.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {stats.map((stat) => {
+              const Icon = stat.icon
+              return (
+                <div
+                  key={stat.label}
+                  className="flex items-center gap-3 rounded-[10px] border border-white/[0.04] bg-[#171717] px-4 py-3"
+                >
+                  <span className={`flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] ${stat.tone}`}>
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-2xl font-extrabold leading-none text-white">{stat.value}</p>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-[#9ba4af]">
+                      {stat.label}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="mx-auto max-w-7xl px-4 py-4 pb-16">
+        <RegistryView registry={registry} />
+      </main>
+    </div>
+  )
+}
+
+export default App
