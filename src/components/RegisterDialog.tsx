@@ -1,29 +1,46 @@
 import { useState, type ChangeEvent, type FormEvent } from "react"
-import { ImagePlus, Loader2, Plus, X } from "lucide-react"
+import { ImagePlus, Loader2, LocateFixed, Plus, Search, X } from "lucide-react"
 import { Dialog } from "./ui/Dialog"
 import { Button } from "./ui/Button"
 import { Input, Label, Textarea } from "./ui/Input"
+import { LocationMap, type MapPoint } from "./LocationMap"
+import { ImageCropDialog } from "./ImageCropDialog"
 import type { RecordType, RegistryDraft, RegistryRecord } from "../types/registry"
+import { geocodeVenezuelaReference } from "../lib/geocoding"
 
 export function RegisterDialog({
   onAdd,
+  initialType = "persons",
+  lockType = false,
+  label = "Registrar",
 }: {
   onAdd: (record: RegistryDraft, photoFile: File) => Promise<RegistryRecord>
+  initialType?: RecordType
+  lockType?: boolean
+  label?: string
 }) {
   const [open, setOpen] = useState(false)
-  const [type, setType] = useState<RecordType>("persons")
+  const [type, setType] = useState<RecordType>(initialType)
   const [photoUrl, setPhotoUrl] = useState("")
   const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [cropFile, setCropFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [centerAddress, setCenterAddress] = useState("")
+  const [centerLocation, setCenterLocation] = useState<MapPoint | null>(null)
+  const [locating, setLocating] = useState(false)
+  const [searchingAddress, setSearchingAddress] = useState(false)
   const [contacts, setContacts] = useState<string[]>([""])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
-  const isBusy = submitting || uploading
+  const isBusy = submitting || uploading || locating || searchingAddress
 
   function reset() {
-    setType("persons")
+    setType(initialType)
     setPhotoUrl("")
     setPhotoFile(null)
+    setCropFile(null)
+    setCenterAddress("")
+    setCenterLocation(null)
     setContacts([""])
     setError("")
   }
@@ -32,14 +49,66 @@ export function RegisterDialog({
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
-    const url = URL.createObjectURL(file)
-    setPhotoUrl(url)
-    setPhotoFile(file)
+    setCropFile(file)
     setUploading(false)
   }
 
   function updateContact(index: number, value: string) {
     setContacts((prev) => prev.map((c, i) => (i === index ? value : c)))
+  }
+
+  function handleTypeChange(nextType: RecordType) {
+    setType(nextType)
+    setError("")
+  }
+
+  async function searchCenterAddressOnMap() {
+    const query = centerAddress.trim()
+    if (!query) {
+      setError("Escribe la ubicacion del centro para buscar en el mapa.")
+      return
+    }
+
+    setError("")
+    setSearchingAddress(true)
+
+    try {
+      const point = await geocodeVenezuelaReference(query)
+      if (!point) {
+        setError("No se encontro una referencia aproximada. Prueba con sector, ciudad y estado, o marca el pin manualmente.")
+        return
+      }
+
+      setCenterLocation(point)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo buscar la ubicacion.")
+    } finally {
+      setSearchingAddress(false)
+    }
+  }
+
+  function useCurrentCenterLocation() {
+    setError("")
+    if (!navigator.geolocation) {
+      setError("Tu navegador no permite obtener la ubicacion actual.")
+      return
+    }
+
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCenterLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        })
+        setLocating(false)
+      },
+      () => {
+        setError("No se pudo obtener tu ubicacion. Marca el punto manualmente en el mapa.")
+        setLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    )
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -52,7 +121,7 @@ export function RegisterDialog({
       setError("Por favor sube una foto.")
       return
     }
-    if (cleanContacts.length === 0) {
+    if (type === "persons" && cleanContacts.length === 0) {
       setError("Agrega al menos un número de contacto.")
       return
     }
@@ -60,7 +129,7 @@ export function RegisterDialog({
     setSubmitting(true)
     const base = {
       name: String(form.get("name") || "").trim(),
-      location: String(form.get("location") || "").trim(),
+      location: type === "centers" ? centerAddress.trim() : String(form.get("location") || "").trim(),
       contacts: cleanContacts,
     }
 
@@ -82,6 +151,8 @@ export function RegisterDialog({
         organization: String(form.get("organization") || "").trim() || undefined,
         needs: String(form.get("needs") || "").trim(),
         schedule: String(form.get("schedule") || "").trim() || undefined,
+        latitude: centerLocation?.latitude,
+        longitude: centerLocation?.longitude,
       }
     }
 
@@ -105,7 +176,7 @@ export function RegisterDialog({
         onClick={() => setOpen(true)}
       >
         <Plus className="size-4" />
-        Registrar
+        {label}
       </Button>
 
       <Dialog
@@ -116,39 +187,49 @@ export function RegisterDialog({
           reset()
         }}
         title="Nuevo registro"
-        description="Completa la información. Los datos se publicarán en la red de ayuda."
-        className="sm:max-w-lg"
+        description={
+          type === "centers"
+            ? "Busca una referencia aproximada o marca el punto manualmente en el mapa."
+            : "Completa la información. Los datos se publicarán en la red de ayuda."
+        }
+        className={type === "centers" ? "sm:!max-w-5xl" : "sm:max-w-lg"}
       >
-        {/* Type selector */}
-        <div className="grid grid-cols-2 gap-2 mt-2 mb-4">
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={() => setType("persons")}
-            className={`rounded-lg border p-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-              type === "persons"
-                ? "border-[var(--status-missing)] bg-[var(--status-missing)]/10 text-orange-300 ring-1 ring-[var(--status-missing)]"
-                : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
-            }`}
-          >
-            Persona desaparecida
-          </button>
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={() => setType("centers")}
-            className={`rounded-lg border p-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-              type === "centers"
-                ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)] ring-1 ring-[var(--primary)]"
-                : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
-            }`}
-          >
-            Centro de acopio
-          </button>
-        </div>
+        {!lockType && (
+          <div className="grid grid-cols-2 gap-2 mt-2 mb-4">
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => handleTypeChange("persons")}
+              className={`rounded-lg border p-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                type === "persons"
+                  ? "border-[var(--status-missing)] bg-[var(--status-missing)]/10 text-orange-300 ring-1 ring-[var(--status-missing)]"
+                  : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              Persona desaparecida
+            </button>
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => handleTypeChange("centers")}
+              className={`rounded-lg border p-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                type === "centers"
+                  ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)] ring-1 ring-[var(--primary)]"
+                  : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              Centro de acopio
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <fieldset disabled={isBusy} className="m-0 flex flex-col gap-4 border-0 p-0">
+          <fieldset
+            disabled={isBusy}
+            className={`m-0 border-0 p-0 ${
+              type === "centers" ? "grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" : "flex flex-col gap-4"
+            }`}
+          >
             {/* Photo upload */}
             <div className="flex flex-col gap-2">
               <Label>Foto</Label>
@@ -221,15 +302,54 @@ export function RegisterDialog({
                   <Label htmlFor="organization">Organización (opcional)</Label>
                   <Input id="organization" name="organization" placeholder="Junta vecinal, ONG..." />
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 lg:col-span-2">
                   <Label htmlFor="location">Ubicación del centro</Label>
-                  <Input id="location" name="location" required placeholder="Dirección completa" />
+                  <div className="flex gap-2">
+                    <Input
+                      id="location"
+                      name="location"
+                      required
+                      value={centerAddress}
+                      onChange={(e) => setCenterAddress(e.target.value)}
+                      placeholder="Sector, ciudad, estado..."
+                    />
+                    <button
+                      type="button"
+                      onClick={searchCenterAddressOnMap}
+                      className="tertiary_button min-h-10 shrink-0 gap-1.5 rounded-[var(--radius)] px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {searchingAddress ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                      Buscar
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      Escribe sector + ciudad + estado para mayor precisión.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={useCurrentCenterLocation}
+                      className="tertiary_button min-h-8 shrink-0 gap-1.5 rounded-full px-2.5 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {locating ? <Loader2 className="size-3.5 animate-spin" /> : <LocateFixed className="size-3.5" />}
+                      Usar mi ubicación
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Si la búsqueda no encuentra el lugar, haz zoom y marca el pin manualmente en el mapa.
+                  </p>
+                  <LocationMap value={centerLocation} onChange={setCenterLocation} className="h-72" />
+                  {centerLocation && (
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      Pin marcado. Puedes arrastrarlo para ajustar la ubicación.
+                    </p>
+                  )}
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 lg:col-span-2">
                   <Label htmlFor="needs">¿Qué se necesita / cómo colaborar?</Label>
                   <Textarea id="needs" name="needs" required placeholder="Agua, alimentos, voluntarios..." />
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 lg:col-span-2">
                   <Label htmlFor="schedule">Horario (opcional)</Label>
                   <Input id="schedule" name="schedule" placeholder="Lun a sáb, 8AM - 6PM" />
                 </div>
@@ -237,8 +357,8 @@ export function RegisterDialog({
             )}
 
             {/* Contacts */}
-            <div className="flex flex-col gap-2">
-              <Label>{type === "persons" ? "Números de contacto de emergencia" : "Números de contacto"}</Label>
+            <div className={`flex flex-col gap-2 ${type === "centers" ? "lg:col-span-2" : ""}`}>
+              <Label>{type === "persons" ? "Números de contacto de emergencia" : "Números de contacto (opcional)"}</Label>
               {contacts.map((contact, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <Input
@@ -283,6 +403,16 @@ export function RegisterDialog({
           </Button>
         </form>
       </Dialog>
+
+      <ImageCropDialog
+        file={cropFile}
+        onCancel={() => setCropFile(null)}
+        onApply={(file, previewUrl) => {
+          setPhotoFile(file)
+          setPhotoUrl(previewUrl)
+          setCropFile(null)
+        }}
+      />
     </>
   )
 }

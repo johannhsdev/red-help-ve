@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import {
   MapPin, Phone, User, Calendar, IdCard,
-  Package, Clock, RotateCcw, Home, Building2, Maximize2, X,
+  Package, Clock, RotateCcw, Home, Building2, Maximize2, X, ExternalLink,
 } from "lucide-react"
 import { Badge } from "./ui/Badge"
 import { Button } from "./ui/Button"
@@ -49,6 +49,10 @@ export function RecordCard({ record, centers, onReportFound, onReopen }: RecordC
   const isFound = isPerson && record.status === "found"
   const [imageOpen, setImageOpen] = useState(false)
   const photoSrc = record.photoUrl || "/placeholder.svg"
+  const centerMapUrl =
+    !isPerson && record.latitude !== undefined && record.longitude !== undefined
+      ? `https://www.google.com/maps/search/?api=1&query=${record.latitude},${record.longitude}`
+      : undefined
 
   useEffect(() => {
     if (!imageOpen) return
@@ -177,6 +181,18 @@ export function RecordCard({ record, centers, onReportFound, onReopen }: RecordC
             <ContactList contacts={record.contacts} prominent />
           </div>
 
+          {!isPerson && centerMapUrl && (
+            <a
+              href={centerMapUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="tertiary_button w-full px-3 py-1.5 text-sm"
+            >
+              <ExternalLink className="size-4" aria-hidden="true" />
+              Abrir ubicación
+            </a>
+          )}
+
           {isPerson && (
             isFound ? (
               <div className="flex flex-col gap-2">
@@ -220,7 +236,7 @@ export function RecordCard({ record, centers, onReportFound, onReopen }: RecordC
 
       {imageOpen && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-3 backdrop-blur-sm sm:p-6"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-3 backdrop-blur-sm sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label={`Foto completa de ${record.name}`}

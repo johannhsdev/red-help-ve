@@ -1,4 +1,4 @@
-import type { RegistryDraft } from "../types/registry"
+import type { AffectedSiteDraft, RegistryDraft } from "../types/registry"
 
 const PHONE_RE = /^\+?[0-9\s().-]{7,24}$/
 const CEDULA_RE = /^[VEJPGvejpg]?-?[0-9.]{5,14}$/
@@ -14,9 +14,9 @@ function cleanOptional(value: string | undefined, max: number) {
   return next || undefined
 }
 
-function validateContacts(contacts: string[]) {
+function validateContacts(contacts: string[], required = true) {
   const cleaned = contacts.map((c) => clean(c, 24)).filter(Boolean)
-  if (cleaned.length === 0) {
+  if (required && cleaned.length === 0) {
     throw new Error("Agrega al menos un numero de contacto.")
   }
   if (cleaned.length > 5) {
@@ -41,11 +41,12 @@ export function validateImageFile(file: File | null) {
 }
 
 export function validateRegistryDraft(draft: RegistryDraft): RegistryDraft {
+  const contacts = validateContacts(draft.contacts, draft.type === "persons")
   const base = {
     ...draft,
     name: clean(draft.name, 120),
     location: clean(draft.location, 180),
-    contacts: validateContacts(draft.contacts),
+    contacts,
   }
 
   if (!base.name) throw new Error("Indica el nombre.")
@@ -75,6 +76,19 @@ export function validateRegistryDraft(draft: RegistryDraft): RegistryDraft {
 
   const needs = clean(draft.needs, 500)
   if (!needs) throw new Error("Indica como se puede colaborar.")
+  if (!Number.isFinite(draft.latitude) || !Number.isFinite(draft.longitude)) {
+    throw new Error("Marca la ubicacion del centro en el mapa.")
+  }
+  if (
+    draft.latitude === undefined ||
+    draft.longitude === undefined ||
+    draft.latitude < -90 ||
+    draft.latitude > 90 ||
+    draft.longitude < -180 ||
+    draft.longitude > 180
+  ) {
+    throw new Error("La ubicacion marcada no es valida.")
+  }
 
   return {
     ...base,
@@ -82,5 +96,52 @@ export function validateRegistryDraft(draft: RegistryDraft): RegistryDraft {
     organization: cleanOptional(draft.organization, 120),
     needs,
     schedule: cleanOptional(draft.schedule, 120),
+    latitude: draft.latitude,
+    longitude: draft.longitude,
+  }
+}
+
+function cleanOptionalNumber(value: number | undefined, max: number) {
+  if (value === undefined || Number.isNaN(value)) return undefined
+  const next = Math.trunc(value)
+  if (next < 0 || next > max) return undefined
+  return next
+}
+
+export function validateAffectedSiteDraft(draft: AffectedSiteDraft): AffectedSiteDraft {
+  const name = clean(draft.name, 120)
+  const address = clean(draft.address, 180)
+  const needs = clean(draft.needs, 500)
+  const description = cleanOptional(draft.description, 700)
+  const contactName = cleanOptional(draft.contactName, 120)
+  const contactPhone = cleanOptional(draft.contactPhone, 24)
+  const familiesCount = cleanOptionalNumber(draft.familiesCount, 10000)
+  const peopleCount = cleanOptionalNumber(draft.peopleCount, 100000)
+
+  if (!name) throw new Error("Indica el nombre del lugar afectado.")
+  if (!address) throw new Error("Indica la direccion o referencia del lugar.")
+  if (!needs) throw new Error("Indica que ayuda se necesita.")
+  if (!Number.isFinite(draft.latitude) || !Number.isFinite(draft.longitude)) {
+    throw new Error("Marca la ubicacion en el mapa.")
+  }
+  if (draft.latitude < -90 || draft.latitude > 90 || draft.longitude < -180 || draft.longitude > 180) {
+    throw new Error("La ubicacion marcada no es valida.")
+  }
+  if (contactPhone && !PHONE_RE.test(contactPhone)) {
+    throw new Error("Revisa el formato del numero de contacto.")
+  }
+
+  return {
+    name,
+    description,
+    address,
+    latitude: draft.latitude,
+    longitude: draft.longitude,
+    familiesCount,
+    peopleCount,
+    needs,
+    urgency: draft.urgency,
+    contactName,
+    contactPhone,
   }
 }

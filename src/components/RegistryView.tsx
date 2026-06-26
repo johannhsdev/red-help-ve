@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Search, Users, Package, HeartHandshake } from "lucide-react"
+import { Search, Users, Package, HeartHandshake, MapPinned } from "lucide-react"
 import type { RegistryState } from "../hooks/useRegistry"
 import type { RecordType, RegistryRecord, SupplyCenter } from "../types/registry"
 import { RecordCard } from "./RecordCard"
 import { RegisterDialog } from "./RegisterDialog"
+import { LocationMap } from "./LocationMap"
 
 const PAGE_SIZE = 6
 type Filter = "todos" | RecordType
@@ -14,18 +15,19 @@ function priority(record: RegistryRecord) {
   return 2
 }
 
-export function RegistryView({ registry }: { registry: RegistryState }) {
+export function RegistryView({ registry, mode }: { registry: RegistryState; mode?: RecordType }) {
   const { records, loaded, error, addRecord, reportFound, reopenPerson } = registry
   const [query, setQuery] = useState("")
   const [filter, setFilter] = useState<Filter>("todos")
   const [visible, setVisible] = useState(PAGE_SIZE)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const activeFilter = mode ?? filter
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return records
       .filter((r) => {
-        if (filter !== "todos" && r.type !== filter) return false
+        if (activeFilter !== "todos" && r.type !== activeFilter) return false
         if (!q) return true
         const haystack = [
           r.name,
@@ -46,11 +48,17 @@ export function RegistryView({ registry }: { registry: RegistryState }) {
         const byPriority = priority(a) - priority(b)
         return byPriority || b.createdAt - a.createdAt
       })
-  }, [records, query, filter])
+  }, [records, query, activeFilter])
 
-  useEffect(() => {
+  function handleQueryChange(value: string) {
+    setQuery(value)
     setVisible(PAGE_SIZE)
-  }, [query, filter])
+  }
+
+  function handleFilterChange(value: Filter) {
+    setFilter(value)
+    setVisible(PAGE_SIZE)
+  }
 
   useEffect(() => {
     const node = sentinelRef.current
@@ -74,6 +82,14 @@ export function RegistryView({ registry }: { registry: RegistryState }) {
   const personCount = records.filter((r) => r.type === "persons").length
   const centerCount = centers.length
   const shown = filtered.slice(0, visible)
+  const centerMarkers = filtered
+    .filter((record): record is SupplyCenter => record.type === "centers")
+    .filter((center) => center.latitude !== undefined && center.longitude !== undefined)
+    .map((center) => ({
+      latitude: center.latitude as number,
+      longitude: center.longitude as number,
+      label: center.name,
+    }))
 
   const filters: { key: Filter; label: string; count: number; icon?: React.ReactNode }[] = [
     { key: "todos", label: "Todos", count: records.length },
@@ -93,8 +109,12 @@ export function RegistryView({ registry }: { registry: RegistryState }) {
           />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por nombre, cédula, ubicación..."
+            onChange={(e) => handleQueryChange(e.target.value)}
+            placeholder={
+              mode === "centers"
+                ? "Buscar por centro, ubicación, necesidad..."
+                : "Buscar por nombre, cédula, ubicación..."
+            }
             className="input_rhve__fom h-8 min-h-8 rounded-[10px] border-[#303033] bg-transparent pl-9 text-[13px]"
             aria-label="Buscar registros"
           />
@@ -102,27 +122,33 @@ export function RegistryView({ registry }: { registry: RegistryState }) {
 
         {/* Filters + Register */}
         <div className="flex items-center gap-2">
-          {/* Filtros: scroll horizontal en mobile */}
-          <div className="-mx-4 flex flex-1 items-center gap-2 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setFilter(f.key)}
-                className={`inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                  filter === f.key
-                    ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#18181b]"
-                    : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
-                }`}
-              >
-                {f.icon}
-                {f.label}
-                <span className="text-xs opacity-70">{f.count}</span>
-              </button>
-            ))}
-          </div>
+          {!mode && (
+            <div className="-mx-4 flex flex-1 items-center gap-2 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0">
+              {filters.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => handleFilterChange(f.key)}
+                  className={`inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                    filter === f.key
+                      ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#18181b]"
+                      : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+                  }`}
+                >
+                  {f.icon}
+                  {f.label}
+                  <span className="text-xs opacity-70">{f.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="shrink-0">
-            <RegisterDialog onAdd={addRecord} />
+            <RegisterDialog
+              onAdd={addRecord}
+              initialType={mode ?? "persons"}
+              lockType={Boolean(mode)}
+              label={mode === "centers" ? "Registrar centro" : "Registrar persona"}
+            />
           </div>
         </div>
       </div>
@@ -146,6 +172,15 @@ export function RegistryView({ registry }: { registry: RegistryState }) {
         </div>
       ) : (
         <>
+          {mode === "centers" && centerMarkers.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                <MapPinned className="size-4 text-sky-300" aria-hidden="true" />
+                Mapa de centros de acopio
+              </div>
+              <LocationMap markers={centerMarkers} className="h-[320px]" />
+            </section>
+          )}
           <p className="text-sm text-[var(--muted-foreground)]" aria-live="polite">
             Mostrando {shown.length} de {filtered.length} registros
           </p>

@@ -14,7 +14,7 @@ export function Input({ error, className, ...props }: InputProps) {
   )
 }
 
-interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {}
+type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement>
 
 export function Textarea({ className, ...props }: TextareaProps) {
   return (

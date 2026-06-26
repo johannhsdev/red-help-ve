@@ -85,7 +85,10 @@ export function useRegistry() {
   }, [])
 
   useEffect(() => {
-    void loadRecords()
+    const timeout = window.setTimeout(() => {
+      void loadRecords()
+    }, 0)
+    return () => window.clearTimeout(timeout)
   }, [loadRecords])
 
   const addRecord = useCallback(async (draft: RegistryDraft, photoFile: File) => {
@@ -122,9 +125,11 @@ export function useRegistry() {
 
     const center = data as SupplyCenterRow
     const contactRows = contactsToInsert(cleanDraft.contacts, "centers", center.id)
-    const { error: contactsError } = await supabase.from("contacts").insert(contactRows)
+    if (contactRows.length > 0) {
+      const { error: contactsError } = await supabase.from("contacts").insert(contactRows)
 
-    if (contactsError) throw new Error(contactsError.message)
+      if (contactsError) throw new Error(contactsError.message)
+    }
 
     const next = centerRowToRecord(center, contactRows as ContactRow[])
     setRecords((current) => [next, ...current])

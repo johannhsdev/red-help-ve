@@ -1,17 +1,24 @@
+import { useState } from "react"
 import { Analytics } from "@vercel/analytics/react"
 import { AlertTriangle, HeartHandshake, MapPinned, ShieldCheck, UsersRound } from "lucide-react"
+import { AffectedSitesView } from "./components/AffectedSitesView"
 import { RegistryView } from "./components/RegistryView"
+import { useAffectedSites } from "./hooks/useAffectedSites"
 import { useRegistry } from "./hooks/useRegistry"
 
 function App() {
   const registry = useRegistry()
+  const affectedSites = useAffectedSites()
+  const [activeTab, setActiveTab] = useState<"persons" | "centers" | "affected">("persons")
   const missingCount = registry.records.filter(
     (record) => record.type === "persons" && record.status === "missing",
   ).length
   const foundCount = registry.records.filter(
     (record) => record.type === "persons" && record.status === "found",
   ).length
+  const personCount = registry.records.filter((record) => record.type === "persons").length
   const centerCount = registry.records.filter((record) => record.type === "centers").length
+  const affectedCount = affectedSites.sites.length
   const stats = [
     {
       label: "Personas desaparecidas",
@@ -30,6 +37,12 @@ function App() {
       value: centerCount,
       icon: MapPinned,
       tone: "text-sky-400",
+    },
+    {
+      label: "Zonas afectadas",
+      value: affectedCount,
+      icon: AlertTriangle,
+      tone: "text-red-400",
     },
   ]
 
@@ -81,7 +94,7 @@ function App() {
                 filtrar en tiempo real.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {stats.map((stat) => {
                 const Icon = stat.icon
                 return (
@@ -106,8 +119,51 @@ function App() {
         </header>
 
         {/* Main content */}
-        <main className="mx-auto max-w-7xl px-4 py-4 pb-16">
-          <RegistryView registry={registry} />
+        <main className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 pb-16">
+          <div className="flex items-center gap-2 overflow-x-auto border-b border-[var(--border)] pb-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("persons")}
+              className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === "persons"
+                  ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#18181b]"
+                  : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              Personas
+              <span className="text-xs opacity-70">{personCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("centers")}
+              className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === "centers"
+                  ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#18181b]"
+                  : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              Centros de Acopio
+              <span className="text-xs opacity-70">{centerCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("affected")}
+              className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === "affected"
+                  ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#18181b]"
+                  : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              Zonas afectadas
+              <span className="text-xs opacity-70">{affectedCount}</span>
+            </button>
+          </div>
+
+          {activeTab === "persons" && <RegistryView registry={registry} mode="persons" />}
+          {activeTab === "centers" && <RegistryView registry={registry} mode="centers" />}
+          {activeTab === "affected" && (
+            <AffectedSitesView affectedSites={affectedSites} />
+          )}
         </main>
       </div>
       <Analytics />

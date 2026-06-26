@@ -1,4 +1,4 @@
-import type { FoundInfo, RegistryDraft, RegistryRecord } from "../types/registry"
+import type { AffectedSite, AffectedSiteDraft, FoundInfo, RegistryDraft, RegistryRecord } from "../types/registry"
 
 export interface PersonRow {
   id: number
@@ -22,6 +22,26 @@ export interface SupplyCenterRow {
   location: string | null
   needs: string | null
   schedule: string | null
+  latitude: number | null
+  longitude: number | null
+  created_at: string
+}
+
+export interface AffectedSiteRow {
+  id: number
+  name: string | null
+  photo_url: string | null
+  description: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  families_count: number | null
+  people_count: number | null
+  needs: string | null
+  urgency: "low" | "medium" | "high" | "critical" | string | null
+  contact_name: string | null
+  contact_phone: string | null
+  status: "active" | "helped" | "closed" | string | null
   created_at: string
 }
 
@@ -109,7 +129,37 @@ export function centerRowToRecord(row: SupplyCenterRow, contacts: ContactRow[]):
     location: row.location ?? "",
     needs: row.needs ?? "",
     schedule: row.schedule ?? undefined,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
     contacts: contactsFor(contacts, "centers", row.id),
+    createdAt: new Date(row.created_at).getTime(),
+  }
+}
+
+export function affectedSiteRowToRecord(row: AffectedSiteRow): AffectedSite {
+  return {
+    id: row.id,
+    photoUrl: row.photo_url ?? "/placeholder.svg",
+    name: row.name ?? "",
+    description: row.description ?? undefined,
+    address: row.address ?? "",
+    latitude: row.latitude ?? 0,
+    longitude: row.longitude ?? 0,
+    familiesCount: row.families_count ?? undefined,
+    peopleCount: row.people_count ?? undefined,
+    needs: row.needs ?? "",
+    urgency:
+      row.urgency === "low" ||
+      row.urgency === "high" ||
+      row.urgency === "critical"
+        ? row.urgency
+        : "medium",
+    contactName: row.contact_name ?? undefined,
+    contactPhone: row.contact_phone ?? undefined,
+    status:
+      row.status === "helped" || row.status === "closed"
+        ? row.status
+        : "active",
     createdAt: new Date(row.created_at).getTime(),
   }
 }
@@ -136,6 +186,26 @@ export function draftToCenterInsert(draft: Extract<RegistryDraft, { type: "cente
     location: draft.location,
     needs: draft.needs,
     schedule: draft.schedule ?? null,
+    latitude: draft.latitude ?? null,
+    longitude: draft.longitude ?? null,
+  }
+}
+
+export function draftToAffectedSiteInsert(draft: AffectedSiteDraft, photoUrl: string) {
+  return {
+    name: draft.name,
+    photo_url: photoUrl,
+    description: draft.description ?? null,
+    address: draft.address,
+    latitude: draft.latitude,
+    longitude: draft.longitude,
+    families_count: draft.familiesCount ?? null,
+    people_count: draft.peopleCount ?? null,
+    needs: draft.needs,
+    urgency: draft.urgency,
+    contact_name: draft.contactName ?? null,
+    contact_phone: draft.contactPhone ?? null,
+    status: "active",
   }
 }
 
@@ -144,10 +214,13 @@ export function contactsToInsert(
   ownerType: "persons" | "centers",
   ownerId: number,
 ) {
-  return contacts.map((phone, index) => ({
-    person_id: ownerType === "persons" ? ownerId : null,
-    center_id: ownerType === "centers" ? ownerId : null,
-    phone,
-    position: index,
-  }))
+  return contacts
+    .map((phone) => phone.trim())
+    .filter(Boolean)
+    .map((phone, index) => ({
+      person_id: ownerType === "persons" ? ownerId : null,
+      center_id: ownerType === "centers" ? ownerId : null,
+      phone,
+      position: index,
+    }))
 }
