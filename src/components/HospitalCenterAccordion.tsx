@@ -191,7 +191,7 @@ export function HospitalCenterAccordion({
                         <span className="font-medium text-white">
                           {patient.nationalId ?? "Sin cedula registrada"}
                         </span>
-                        {patient.age !== undefined && ` - ${patient.age} anos`}
+                        {patient.age !== undefined && ` - ${patient.age} años`}
                       </p>
                       {patient.notes && <p className="mt-2 text-sm text-[#cbd5e1]">{patient.notes}</p>}
                     </div>
