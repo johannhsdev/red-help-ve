@@ -63,3 +63,43 @@ export interface AffectedSite {
 }
 
 export type AffectedSiteDraft = Omit<AffectedSite, "id" | "photoUrl" | "createdAt" | "status">
+
+export interface HospitalPatient {
+  id: number
+  hospitalCenterId: number
+  nationalId: string
+  name: string
+  age?: number
+  notes?: string
+  verifiedInHospital: boolean
+  foundByFamily: boolean
+  verifiedAt?: number
+  familyFoundAt?: number
+  createdAt: number
+}
+
+export interface HospitalCenter {
+  id: number
+  name: string
+  city: string
+  state?: string
+  address: string
+  contactPhone?: string
+  notes?: string
+  status: "active" | "closed"
+  patients: HospitalPatient[]
+  createdAt: number
+}
+
+export type HospitalCenterDraft = Omit<HospitalCenter, "id" | "patients" | "createdAt" | "status">
+
+export type HospitalPatientDraft = Omit<
+  HospitalPatient,
+  | "id"
+  | "hospitalCenterId"
+  | "verifiedInHospital"
+  | "foundByFamily"
+  | "verifiedAt"
+  | "familyFoundAt"
+  | "createdAt"
+>

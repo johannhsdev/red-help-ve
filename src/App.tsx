@@ -1,15 +1,18 @@
 import { useState } from "react"
 import { Analytics } from "@vercel/analytics/react"
-import { AlertTriangle, HeartHandshake, MapPinned, ShieldCheck, UsersRound } from "lucide-react"
+import { AlertTriangle, HeartHandshake, Hospital, MapPinned, ShieldCheck, UsersRound } from "lucide-react"
 import { AffectedSitesView } from "./components/AffectedSitesView"
+import { HospitalCentersView } from "./components/HospitalCentersView"
 import { RegistryView } from "./components/RegistryView"
 import { useAffectedSites } from "./hooks/useAffectedSites"
+import { useHospitalCenters } from "./hooks/useHospitalCenters"
 import { useRegistry } from "./hooks/useRegistry"
 
 function App() {
   const registry = useRegistry()
   const affectedSites = useAffectedSites()
-  const [activeTab, setActiveTab] = useState<"persons" | "centers" | "affected">("persons")
+  const hospitalCenters = useHospitalCenters()
+  const [activeTab, setActiveTab] = useState<"persons" | "centers" | "hospitals" | "affected">("persons")
   const missingCount = registry.records.filter(
     (record) => record.type === "persons" && record.status === "missing",
   ).length
@@ -19,6 +22,11 @@ function App() {
   const personCount = registry.records.filter((record) => record.type === "persons").length
   const centerCount = registry.records.filter((record) => record.type === "centers").length
   const affectedCount = affectedSites.sites.length
+  const hospitalCount = hospitalCenters.centers.length
+  const hospitalPatientCount = hospitalCenters.centers.reduce(
+    (total, center) => total + center.patients.length,
+    0,
+  )
   const stats = [
     {
       label: "Personas desaparecidas",
@@ -37,6 +45,12 @@ function App() {
       value: centerCount,
       icon: MapPinned,
       tone: "text-sky-400",
+    },
+    {
+      label: "Pacientes en hospitales",
+      value: hospitalPatientCount,
+      icon: Hospital,
+      tone: "text-rose-300",
     },
     {
       label: "Zonas afectadas",
@@ -94,7 +108,7 @@ function App() {
                 filtrar en tiempo real.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               {stats.map((stat) => {
                 const Icon = stat.icon
                 return (
@@ -130,8 +144,20 @@ function App() {
                   : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
               }`}
             >
-              Personas
+              Pacientes
               <span className="text-xs opacity-70">{personCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("hospitals")}
+              className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === "hospitals"
+                  ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#18181b]"
+                  : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              Centros hospitalarios
+              <span className="text-xs opacity-70">{hospitalCount}</span>
             </button>
             <button
               type="button"
@@ -161,6 +187,7 @@ function App() {
 
           {activeTab === "persons" && <RegistryView registry={registry} mode="persons" />}
           {activeTab === "centers" && <RegistryView registry={registry} mode="centers" />}
+          {activeTab === "hospitals" && <HospitalCentersView hospitalCenters={hospitalCenters} />}
           {activeTab === "affected" && (
             <AffectedSitesView affectedSites={affectedSites} />
           )}
