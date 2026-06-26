@@ -177,12 +177,12 @@ export function validateHospitalCenterDraft(draft: HospitalCenterDraft): Hospita
 }
 
 export function validateHospitalPatientDraft(draft: HospitalPatientDraft): HospitalPatientDraft {
-  const nationalId = clean(draft.nationalId, 12)
+  const nationalId = clean(draft.nationalId ?? "", 12)
   const name = clean(draft.name, 140)
   const notes = cleanOptional(draft.notes, 500)
   const age = cleanOptionalNumber(draft.age, 120)
 
-  if (!/^[0-9]{5,12}$/.test(nationalId)) {
+  if (nationalId && !/^[0-9]{5,12}$/.test(nationalId)) {
     throw new Error("La cedula debe tener solo numeros, sin puntos, guiones ni letras.")
   }
   if (!name) throw new Error("Indica el nombre del paciente.")
@@ -191,7 +191,7 @@ export function validateHospitalPatientDraft(draft: HospitalPatientDraft): Hospi
   }
 
   return {
-    nationalId,
+    nationalId: nationalId || undefined,
     name,
     age,
     notes,

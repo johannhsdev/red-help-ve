@@ -67,7 +67,7 @@ export type AffectedSiteDraft = Omit<AffectedSite, "id" | "photoUrl" | "createdA
 export interface HospitalPatient {
   id: number
   hospitalCenterId: number
-  nationalId: string
+  nationalId?: string
   name: string
   age?: number
   notes?: string

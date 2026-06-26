@@ -30,7 +30,7 @@ function formatDate(timestamp: number | undefined) {
 
 function patientMatches(patient: HospitalPatient, query: string) {
   if (!query) return true
-  return [patient.name, patient.nationalId, patient.notes ?? ""].join(" ").toLowerCase().includes(query)
+  return [patient.name, patient.nationalId ?? "", patient.notes ?? ""].join(" ").toLowerCase().includes(query)
 }
 
 function patientCountLabel(count: number) {
@@ -84,7 +84,7 @@ export function HospitalCenterAccordion({
     setError("")
 
     const draft: HospitalPatientDraft = {
-      nationalId,
+      nationalId: nationalId || undefined,
       name,
       age: age ? Number(age) : undefined,
       notes: notes.trim() || undefined,
@@ -187,7 +187,10 @@ export function HospitalCenterAccordion({
                         {patient.foundByFamily && <Badge variant="found">Familia lo encontro</Badge>}
                       </div>
                       <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                        Cedula: <span className="font-medium text-white">{patient.nationalId}</span>
+                        Cedula:{" "}
+                        <span className="font-medium text-white">
+                          {patient.nationalId ?? "Sin cedula registrada"}
+                        </span>
                         {patient.age !== undefined && ` - ${patient.age} anos`}
                       </p>
                       {patient.notes && <p className="mt-2 text-sm text-[#cbd5e1]">{patient.notes}</p>}
@@ -254,15 +257,14 @@ export function HospitalCenterAccordion({
 
           <fieldset disabled={submitting} className="m-0 grid gap-3 border-0 p-0 lg:grid-cols-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor={`patient-id-${center.id}`}>Cedula</Label>
+              <Label htmlFor={`patient-id-${center.id}`}>Cedula (opcional)</Label>
               <Input
                 id={`patient-id-${center.id}`}
                 value={nationalId}
                 onChange={(e) => setNationalId(e.target.value.replace(/\D/g, "").slice(0, 12))}
-                required
                 inputMode="numeric"
                 pattern="[0-9]{5,12}"
-                placeholder="12345678"
+                placeholder="Solo si esta disponible"
               />
             </div>
 

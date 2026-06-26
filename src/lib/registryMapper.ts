@@ -208,7 +208,7 @@ export function hospitalPatientRowToRecord(row: HospitalPatientRow): HospitalPat
   return {
     id: row.id,
     hospitalCenterId: row.hospital_center_id ?? 0,
-    nationalId: row.national_id ?? "",
+    nationalId: row.national_id ?? undefined,
     name: row.name ?? "",
     age: row.age ?? undefined,
     notes: row.notes ?? undefined,
@@ -303,7 +303,7 @@ export function draftToHospitalCenterInsert(draft: HospitalCenterDraft) {
 export function draftToHospitalPatientRpc(draft: HospitalPatientDraft, hospitalCenterId: number) {
   return {
     p_hospital_center_id: hospitalCenterId,
-    p_national_id: draft.nationalId,
+    p_national_id: draft.nationalId ?? null,
     p_name: draft.name,
     p_age: draft.age ?? null,
     p_notes: draft.notes ?? null,
