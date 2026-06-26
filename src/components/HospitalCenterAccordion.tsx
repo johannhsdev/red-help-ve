@@ -165,7 +165,7 @@ export function HospitalCenterAccordion({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {visiblePatients.map((patient) => {
+            {visiblePatients.map((patient, index) => {
               const savingHospital = savingKey === `${patient.id}-verifiedInHospital`
               const savingFamily = savingKey === `${patient.id}-foundByFamily`
 
@@ -177,6 +177,9 @@ export function HospitalCenterAccordion({
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-[var(--muted-foreground)]">
+                          {index + 1}-
+                        </span>
                         <h3 className="text-sm font-semibold text-white">{patient.name}</h3>
                         <Badge variant={patient.verifiedInHospital ? "found" : "missing"}>
                           {patient.verifiedInHospital ? "En hospital" : "Por verificar"}
