@@ -1,21 +1,24 @@
 import { useState } from "react"
 import { Analytics } from "@vercel/analytics/react"
-import { AlertTriangle, HeartHandshake, Home, Hospital, MapPinned, ShieldCheck, UsersRound } from "lucide-react"
+import { AlertTriangle, HeartHandshake, Home, Hospital, MapPinned, ShieldCheck, UsersRound, Waves } from "lucide-react"
 import { AffectedSitesView } from "./components/AffectedSitesView"
+import { EarthquakesView } from "./components/EarthquakesView"
 import { HospitalCentersView } from "./components/HospitalCentersView"
 import { RegistryView } from "./components/RegistryView"
 import { SheltersView } from "./components/SheltersView"
 import { useAffectedSites } from "./hooks/useAffectedSites"
+import { useEarthquakes } from "./hooks/useEarthquakes"
 import { useHospitalCenters } from "./hooks/useHospitalCenters"
 import { useRegistry } from "./hooks/useRegistry"
 import { useShelters } from "./hooks/useShelters"
 
 function App() {
+  const [activeTab, setActiveTab] = useState<"persons" | "centers" | "hospitals" | "shelters" | "affected" | "earthquakes">("persons")
   const registry = useRegistry()
   const affectedSites = useAffectedSites()
+  const earthquakes = useEarthquakes()
   const hospitalCenters = useHospitalCenters()
   const shelters = useShelters()
-  const [activeTab, setActiveTab] = useState<"persons" | "centers" | "hospitals" | "shelters" | "affected">("persons")
   const missingCount = registry.records.filter(
     (record) => record.type === "persons" && record.status === "missing",
   ).length
@@ -35,6 +38,7 @@ function App() {
     (total, shelter) => total + shelter.people.length,
     0,
   )
+  const earthquakeCount = earthquakes.events.length
   const stats = [
     {
       label: "Personas desaparecidas",
@@ -71,6 +75,12 @@ function App() {
       value: affectedCount,
       icon: AlertTriangle,
       tone: "text-red-400",
+    },
+    {
+      label: "Sismos recientes",
+      value: earthquakeCount,
+      icon: Waves,
+      tone: "text-orange-300",
     },
   ]
 
@@ -122,7 +132,7 @@ function App() {
                 filtrar en tiempo real.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
               {stats.map((stat) => {
                 const Icon = stat.icon
                 return (
@@ -209,6 +219,18 @@ function App() {
               Zonas afectadas
               <span className="text-xs opacity-70">{affectedCount}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("earthquakes")}
+              className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === "earthquakes"
+                  ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#18181b]"
+                  : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              Sismos
+              <span className="text-xs opacity-70">{earthquakeCount}</span>
+            </button>
           </div>
 
           {activeTab === "persons" && <RegistryView registry={registry} mode="persons" />}
@@ -218,6 +240,7 @@ function App() {
           {activeTab === "affected" && (
             <AffectedSitesView affectedSites={affectedSites} />
           )}
+          {activeTab === "earthquakes" && <EarthquakesView earthquakes={earthquakes} />}
         </main>
       </div>
       <Analytics />
