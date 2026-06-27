@@ -5,6 +5,7 @@ import { AffectedSitesView } from "./components/AffectedSitesView"
 import { EarthquakesView } from "./components/EarthquakesView"
 import { HospitalCentersView } from "./components/HospitalCentersView"
 import { RegistryView } from "./components/RegistryView"
+import { MissingPersonsPage } from "./MissingPersons/MissingPersonsPage"
 import { SheltersView } from "./components/SheltersView"
 import { useAffectedSites } from "./hooks/useAffectedSites"
 import { useEarthquakes } from "./hooks/useEarthquakes"
@@ -246,7 +247,7 @@ function App() {
             </button>
           </div>
 
-          {activeTab === "persons" && <RegistryView registry={registry} mode="persons" />}
+          {activeTab === "persons" && <MissingPersonsPage />}
           {activeTab === "centers" && <RegistryView registry={registry} mode="centers" />}
           {activeTab === "hospitals" && <HospitalCentersView hospitalCenters={hospitalCenters} />}
           {activeTab === "shelters" && <SheltersView shelters={shelters} />}
