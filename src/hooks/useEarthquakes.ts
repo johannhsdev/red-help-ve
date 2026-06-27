@@ -118,6 +118,7 @@ export function useEarthquakes() {
   const [alarmThreshold, setAlarmThresholdState] = useState(() => storedNumber(ALARM_THRESHOLD_STORAGE_KEY, DEFAULT_ALARM_THRESHOLD))
   const [alarmPermission, setAlarmPermission] = useState<NotificationPermission>(() => notificationPermission())
   const [pushStatus, setPushStatus] = useState("")
+  const [pushError, setPushError] = useState("")
   const seenEventIds = useRef<Set<string>>(new Set())
   const bootstrappedAlarm = useRef(false)
 
@@ -135,8 +136,9 @@ export function useEarthquakes() {
   }, [])
 
   const registerPushSubscription = useCallback(async (threshold: number) => {
+    setPushError("")
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setPushStatus("Este navegador no soporta Web Push.")
+      setPushError("Este navegador no soporta Web Push.")
       return false
     }
 
@@ -145,14 +147,14 @@ export function useEarthquakes() {
       : await requestAlarmPermission()
 
     if (permission !== "granted") {
-      setPushStatus("Activa los permisos de notificacion para recibir alertas con la app cerrada.")
+      setPushError("Activa los permisos de notificacion para recibir alertas con la app cerrada.")
       return false
     }
 
     const keyResponse = await fetch(PUSH_SUBSCRIPTIONS_URL)
     const keyPayload = (await keyResponse.json()) as { ok?: boolean; publicKey?: string; message?: string }
     if (!keyResponse.ok || !keyPayload.publicKey) {
-      setPushStatus(keyPayload.message || "Falta configurar la clave publica VAPID.")
+      setPushError(keyPayload.message || "Falta configurar la clave publica VAPID.")
       return false
     }
 
@@ -174,7 +176,7 @@ export function useEarthquakes() {
 
     const payload = (await response.json()) as { ok?: boolean; message?: string }
     if (!response.ok || !payload.ok) {
-      setPushStatus(payload.message || "No se pudo guardar la suscripcion push.")
+      setPushError(payload.message || "No se pudo guardar la suscripcion push.")
       return false
     }
 
@@ -196,6 +198,7 @@ export function useEarthquakes() {
     })
     await subscription.unsubscribe()
     setPushStatus("Web Push desactivado.")
+    setPushError("")
   }, [])
 
   const setAlarmEnabled = useCallback(async (enabled: boolean) => {
@@ -302,6 +305,7 @@ export function useEarthquakes() {
     setAlarmThreshold,
     alarmPermission,
     pushStatus,
+    pushError,
     requestAlarmPermission,
     refresh: loadEarthquakes,
   }

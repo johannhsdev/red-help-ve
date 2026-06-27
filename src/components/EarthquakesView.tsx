@@ -194,6 +194,7 @@ export function EarthquakesView({ earthquakes }: { earthquakes: EarthquakesState
     setAlarmThreshold,
     alarmPermission,
     pushStatus,
+    pushError,
     requestAlarmPermission,
     refresh,
   } = earthquakes
@@ -250,7 +251,8 @@ export function EarthquakesView({ earthquakes }: { earthquakes: EarthquakesState
     }
 
     if (alarmPermission === "default") {
-      await requestAlarmPermission()
+      const granted = await requestAlarmPermission()
+      if (granted !== "granted") return
     }
     await setAlarmEnabled(true)
   }
@@ -305,7 +307,8 @@ export function EarthquakesView({ earthquakes }: { earthquakes: EarthquakesState
               <p className="mt-1 text-xs text-[#8f98a3]">
                 Avisa desde M 4.0 y marca alerta fuerte desde M 5.0. El aviso muestra hace cuantos segundos o minutos ocurrio.
               </p>
-              {pushStatus && <p className="mt-1 text-xs font-semibold text-sky-200">{pushStatus}</p>}
+              {pushError && <p className="mt-1 text-xs font-semibold text-red-400">{pushError}</p>}
+              {!pushError && pushStatus && <p className="mt-1 text-xs font-semibold text-sky-200">{pushStatus}</p>}
             </div>
           </div>
 
