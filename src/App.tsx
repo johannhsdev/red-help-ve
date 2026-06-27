@@ -12,6 +12,16 @@ import { useHospitalCenters } from "./hooks/useHospitalCenters"
 import { useRegistry } from "./hooks/useRegistry"
 import { useShelters } from "./hooks/useShelters"
 
+function statColumnSpan(index: number, total: number) {
+  const remainder = total % 4
+  const lastRowStart = total - remainder
+
+  if (remainder === 0 || index < lastRowStart) return "lg:col-span-3"
+  if (remainder === 1) return "lg:col-span-12"
+  if (remainder === 2) return "lg:col-span-6"
+  return "lg:col-span-4"
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState<"persons" | "centers" | "hospitals" | "shelters" | "affected" | "earthquakes">("persons")
   const registry = useRegistry()
@@ -132,13 +142,16 @@ function App() {
                 filtrar en tiempo real.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
-              {stats.map((stat) => {
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-12">
+              {stats.map((stat, index) => {
                 const Icon = stat.icon
                 return (
                   <div
                     key={stat.label}
-                    className="flex items-center gap-3 rounded-[10px] border border-white/[0.04] bg-[#171717] px-4 py-3"
+                    className={`flex items-center gap-3 rounded-[10px] border border-white/[0.04] bg-[#171717] px-4 py-3 sm:col-span-1 ${statColumnSpan(
+                      index,
+                      stats.length,
+                    )}`}
                   >
                     <span className={`flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] ${stat.tone}`}>
                       <Icon className="size-5" aria-hidden="true" />
