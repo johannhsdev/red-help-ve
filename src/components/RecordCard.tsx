@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
 import {
   MapPin, Phone, User, Calendar, IdCard,
-  Package, Clock, RotateCcw, Home, Building2, Maximize2, X, ExternalLink,
+  Package, Clock, RotateCcw, Home, Building2, Maximize2, X, ExternalLink, Loader2, Share2,
 } from "lucide-react"
 import { Badge } from "./ui/Badge"
 import { Button } from "./ui/Button"
 import { FoundDialog } from "./FoundDialog"
+import { shareMissingPerson } from "../lib/missingPersonShare"
 import type { RegistryRecord, FoundInfo, SupplyCenter } from "../types/registry"
 
 function ContactList({ contacts, prominent = false }: { contacts: string[]; prominent?: boolean }) {
@@ -48,6 +49,7 @@ export function RecordCard({ record, centers, onReportFound, onReopen }: RecordC
   const isPerson = record.type === "persons"
   const isFound = isPerson && record.status === "found"
   const [imageOpen, setImageOpen] = useState(false)
+  const [sharingMissingCard, setSharingMissingCard] = useState(false)
   const photoSrc = record.photoUrl || "/placeholder.svg"
   const centerMapUrl =
     !isPerson && record.latitude !== undefined && record.longitude !== undefined
@@ -66,6 +68,17 @@ export function RecordCard({ record, centers, onReportFound, onReopen }: RecordC
       document.body.style.overflow = ""
     }
   }, [imageOpen])
+
+  async function handleShareMissingPerson() {
+    if (record.type !== "persons" || record.status !== "missing") return
+
+    setSharingMissingCard(true)
+    try {
+      await shareMissingPerson(record)
+    } finally {
+      setSharingMissingCard(false)
+    }
+  }
 
   return (
     <>
@@ -224,11 +237,28 @@ export function RecordCard({ record, centers, onReportFound, onReopen }: RecordC
                 </Button>
               </div>
             ) : (
-              <FoundDialog
-                personName={record.name}
-                centers={centers}
-                onConfirm={(info) => onReportFound(record.id, info)}
-              />
+              <div className="flex flex-col gap-2">
+                <FoundDialog
+                  personName={record.name}
+                  centers={centers}
+                  onConfirm={(info) => onReportFound(record.id, info)}
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="h-8 min-h-8 w-full gap-1.5 rounded-lg bg-[#25d366] text-sm font-extrabold text-white hover:bg-[#1fb857]"
+                  onClick={handleShareMissingPerson}
+                  disabled={sharingMissingCard}
+                  aria-label={`Compartir por WhatsApp la tarjeta de ${record.name}`}
+                >
+                  {sharingMissingCard ? (
+                    <Loader2 className="size-4 animate-spin text-white" aria-hidden="true" />
+                  ) : (
+                    <Share2 className="size-4 text-white" aria-hidden="true" />
+                  )}
+                  {sharingMissingCard ? "Preparando tarjeta..." : "Compartir por WhatsApp"}
+                </Button>
+              </div>
             )
           )}
         </div>
