@@ -1,0 +1,19 @@
+{
+  "name": "Red Help VE",
+  "short_name": "Red Help",
+  "description": "Red de ayuda, personas desaparecidas, centros de apoyo y monitoreo sismico.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

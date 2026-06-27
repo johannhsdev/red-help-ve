@@ -1,4 +1,4 @@
-export type EarthquakeSource = "USGS" | "GEOFON" | "EMSC" | "FUNVISIS"
+export type EarthquakeSource = "USGS" | "GEOFON" | "EMSC" | "FUNVISIS" | "SGC"
 export type EarthquakeConfidence = "single" | "medium" | "high"
 
 export interface EarthquakeSourceReport {

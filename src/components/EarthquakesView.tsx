@@ -2,6 +2,7 @@ import { useMemo, useState } from "react"
 import {
   AlertTriangle,
   ArrowDownUp,
+  BellRing,
   Clock3,
   ExternalLink,
   LocateFixed,
@@ -63,6 +64,7 @@ const sourceLabel: Record<EarthquakeSource, string> = {
   GEOFON: "GFZ GEOFON",
   EMSC: "EMSC",
   FUNVISIS: "FUNVISIS",
+  SGC: "SGC",
 }
 
 const sourceClass: Record<EarthquakeSource, string> = {
@@ -70,12 +72,16 @@ const sourceClass: Record<EarthquakeSource, string> = {
   GEOFON: "border-violet-500/40 bg-violet-950/50 text-violet-100",
   EMSC: "border-amber-500/40 bg-amber-950/50 text-amber-100",
   FUNVISIS: "border-emerald-500/40 bg-emerald-950/50 text-emerald-100",
+  SGC: "border-lime-500/40 bg-lime-950/50 text-lime-100",
 }
 
 function validationLabel(event: EarthquakeEvent) {
   const sources = new Set(event.confirmedBy)
 
   if (sources.size === 0) return "Sin validar"
+  if (sources.has("SGC")) {
+    return sources.size === 1 ? "Validado por SGC" : `Validado por SGC y ${sources.size - 1} fuente${sources.size === 2 ? "" : "s"}`
+  }
   if (sources.has("FUNVISIS")) {
     return sources.size === 1 ? "Validado por FUNVISIS" : `Validado por FUNVISIS y ${sources.size - 1} fuente${sources.size === 2 ? "" : "s"}`
   }
@@ -87,6 +93,7 @@ function validationLabel(event: EarthquakeEvent) {
 }
 
 function sourceBadgeLabel(source: EarthquakeSource, sourceCount: number) {
+  if (source === "SGC") return "Validado por SGC"
   if (source === "FUNVISIS") return "Validado por FUNVISIS"
   return `${sourceCount > 1 ? "Confirmado" : "Reportado"} por ${sourceLabel[source]}`
 }
@@ -181,6 +188,13 @@ export function EarthquakesView({ earthquakes }: { earthquakes: EarthquakesState
     generatedAt,
     userLocation,
     setUserLocation,
+    alarmEnabled,
+    setAlarmEnabled,
+    alarmThreshold,
+    setAlarmThreshold,
+    alarmPermission,
+    pushStatus,
+    requestAlarmPermission,
     refresh,
   } = earthquakes
   const [sortMode, setSortMode] = useState<SortMode>("recent")
@@ -229,6 +243,18 @@ export function EarthquakesView({ earthquakes }: { earthquakes: EarthquakesState
     )
   }
 
+  async function toggleAlarm() {
+    if (alarmEnabled) {
+      await setAlarmEnabled(false)
+      return
+    }
+
+    if (alarmPermission === "default") {
+      await requestAlarmPermission()
+    }
+    await setAlarmEnabled(true)
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <section className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -240,7 +266,7 @@ export function EarthquakesView({ earthquakes }: { earthquakes: EarthquakesState
             <div>
               <h2 className="text-lg font-extrabold leading-tight text-white">Actividad sismica reciente</h2>
               <p className="mt-1 text-sm leading-relaxed text-[#b7c0cc]">
-                Consulta centralizada con USGS, GFZ GEOFON, EMSC y FUNVISIS. La distancia se calcula solo si activas GPS.
+                Consulta centralizada con SGC, USGS, GFZ GEOFON, EMSC y FUNVISIS. La distancia se calcula solo si activas GPS.
               </p>
             </div>
           </div>
@@ -256,6 +282,69 @@ export function EarthquakesView({ earthquakes }: { earthquakes: EarthquakesState
               {strongest ? strongest.magnitude.toFixed(1) : "0"}
             </p>
             <p className="mt-1 text-xs font-bold uppercase tracking-wide text-[#9ba4af]">Mayor magnitud</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[10px] border border-[#2a2a2d] bg-[#151515] p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span
+              className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${
+                alarmEnabled ? "bg-red-600 text-white" : "bg-[#222226] text-[#aeb4bd]"
+              }`}
+            >
+              <BellRing className="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h3 className="text-base font-extrabold leading-tight text-white">Alarma sismica</h3>
+              <p className="text-sm text-[#aeb4bd]">
+                {alarmEnabled ? `Activa desde M ${alarmThreshold.toFixed(1)}` : "Inactiva"} · Notificaciones:{" "}
+                {alarmPermission === "granted" ? "permitidas" : alarmPermission === "denied" ? "bloqueadas" : "pendientes"}
+              </p>
+              <p className="mt-1 text-xs text-[#8f98a3]">
+                Avisa desde M 4.0 y marca alerta fuerte desde M 5.0. El aviso muestra hace cuantos segundos o minutos ocurrio.
+              </p>
+              {pushStatus && <p className="mt-1 text-xs font-semibold text-sky-200">{pushStatus}</p>}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:min-w-72">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={alarmEnabled ? "danger" : "primary"}
+                size="sm"
+                onClick={() => void toggleAlarm()}
+                className="h-8 min-h-8 rounded-full px-3 py-1.5"
+              >
+                <BellRing className="size-4" aria-hidden="true" />
+                {alarmEnabled ? "Apagar alarma" : "Activar alarma"}
+              </Button>
+              {alarmPermission !== "granted" && (
+                <Button
+                  type="button"
+                  variant="tertiary"
+                  size="sm"
+                  onClick={() => void requestAlarmPermission()}
+                  className="h-8 min-h-8 rounded-full px-3 py-1.5"
+                >
+                  Permitir avisos
+                </Button>
+              )}
+            </div>
+            <label className="flex items-center gap-3 text-xs font-bold uppercase tracking-wide text-[#9ba4af]">
+              Umbral M {alarmThreshold.toFixed(1)}
+              <input
+                type="range"
+                min="4"
+                max="7"
+                step="0.1"
+                value={alarmThreshold}
+                onChange={(event) => setAlarmThreshold(Number(event.target.value))}
+                className="h-2 min-w-0 flex-1 accent-red-500"
+              />
+            </label>
           </div>
         </div>
       </section>

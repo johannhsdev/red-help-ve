@@ -1,4 +1,4 @@
-export type EarthquakeSource = "USGS" | "GEOFON" | "EMSC" | "FUNVISIS"
+export type EarthquakeSource = "USGS" | "GEOFON" | "EMSC" | "FUNVISIS" | "SGC"
 export type EarthquakeConfidence = "single" | "medium" | "high"
 
 export interface EarthquakeSourceReport {
@@ -118,6 +118,30 @@ interface FunvisisResponse {
   features?: FunvisisFeature[]
 }
 
+interface SgcFeature {
+  id?: string
+  geometry?: {
+    coordinates?: [number, number, number]
+  }
+  properties?: {
+    agency?: string | null
+    cdi?: number | null
+    depth?: number | null
+    localTime?: string | null
+    mag?: number | null
+    magType?: string | null
+    place?: string | null
+    status?: string | null
+    type?: string | null
+    updated?: string | null
+    utcTime?: string | null
+  }
+}
+
+interface SgcResponse {
+  features?: SgcFeature[]
+}
+
 interface SourceResult {
   status: SourceStatus
   observations: SourceObservation[]
@@ -146,6 +170,7 @@ const USGS_QUERY_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query"
 const GEOFON_QUERY_URL = "https://geofon.gfz.de/fdsnws/event/1/query"
 const EMSC_QUERY_URL = "https://www.seismicportal.eu/fdsnws/event/1/query"
 const FUNVISIS_RECENT_URL = "http://www.funvisis.gob.ve/maravilla.json"
+const SGC_QUERY_URL = "https://api.sgc.gov.co/biweekly/biweekly_earthquakes"
 const DEFAULT_LATITUDE = 7
 const DEFAULT_LONGITUDE = -66
 const DEFAULT_MAX_RADIUS_KM = 1200
@@ -160,7 +185,7 @@ const FUNVISIS_MERGE_TIME_WINDOW_MS = 90_000
 const MERGE_DISTANCE_KM = 15
 const MERGE_MAGNITUDE_DELTA = 0.3
 const FUTURE_EVENT_TOLERANCE_MS = 5 * 60 * 1000
-const SOURCE_PRIORITY: EarthquakeSource[] = ["USGS", "GEOFON", "EMSC", "FUNVISIS"]
+const SOURCE_PRIORITY: EarthquakeSource[] = ["SGC", "FUNVISIS", "USGS", "GEOFON", "EMSC"]
 
 function getQueryValue(searchParams: URLSearchParams, name: string) {
   return searchParams.get(name) ?? undefined
@@ -403,6 +428,26 @@ function parseFunvisisTime(dateValue: string | null | undefined, timeValue: stri
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
+function parseSgcLocalDateTime(value: string | null | undefined) {
+  if (!value) return null
+  const normalized = value.trim().replace(" ", "T")
+  const date = new Date(`${normalized}-05:00`)
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+function parseSgcUtcDateTime(value: string | null | undefined) {
+  if (!value) return null
+  const normalized = value.trim().replace(" ", "T")
+  const date = new Date(`${normalized}Z`)
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+function sgcDateParam(value: string | undefined) {
+  const date = value ? new Date(value) : new Date()
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date
+  return safeDate.toISOString().slice(0, 19)
+}
+
 function funvisisId(place: string, time: string, latitude: number, longitude: number, magnitude: number) {
   const slug = place
     .toLowerCase()
@@ -411,6 +456,42 @@ function funvisisId(place: string, time: string, latitude: number, longitude: nu
     .slice(0, 48)
 
   return `${time.slice(0, 16)}-${latitude.toFixed(3)}-${longitude.toFixed(3)}-${magnitude.toFixed(1)}-${slug}`
+}
+
+function normalizeSgcFeature(feature: SgcFeature): SourceObservation | null {
+  const [longitude, latitude, rawDepth] = feature.geometry?.coordinates ?? []
+  const magnitude = feature.properties?.mag
+  const time = parseSgcUtcDateTime(feature.properties?.utcTime) ?? parseSgcLocalDateTime(feature.properties?.localTime)
+
+  if (
+    !feature.id ||
+    !finiteNumber(latitude) ||
+    !finiteNumber(longitude) ||
+    !finiteNumber(magnitude) ||
+    !time
+  ) {
+    return null
+  }
+
+  const place = feature.properties?.place || "Ubicacion no disponible"
+  const status = feature.properties?.status === "manual" ? "manual" : "automatic"
+  return {
+    id: feature.id,
+    source: "SGC",
+    title: `M ${magnitude.toFixed(1)} - ${place}`,
+    magnitude,
+    place: `${place}${status === "automatic" ? " (automatico/no confirmado)" : ""}`,
+    time,
+    updated: parseSgcLocalDateTime(feature.properties?.updated),
+    latitude,
+    longitude,
+    depthKm: finiteNumber(feature.properties?.depth)
+      ? Math.abs(feature.properties.depth)
+      : finiteNumber(rawDepth)
+        ? Math.abs(rawDepth)
+        : null,
+    url: "https://www.sgc.gov.co/sismos",
+  }
 }
 
 function normalizeFunvisisFeature(feature: FunvisisFeature): SourceObservation | null {
@@ -653,6 +734,51 @@ async function loadFunvisis(query: EarthquakeQuery): Promise<SourceResult> {
   }
 }
 
+async function loadSgc(query: EarthquakeQuery): Promise<SourceResult> {
+  const url = new URL(SGC_QUERY_URL)
+  url.searchParams.set("startdate", sgcDateParam(query.starttime))
+  url.searchParams.set("enddate", sgcDateParam(query.endtime))
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      return { status: { source: "SGC", ok: false, status: response.status, count: 0 }, observations: [] }
+    }
+
+    const payload = (await response.json()) as SgcResponse
+    const startTime = new Date(query.starttime).getTime()
+    const endTime = query.endtime ? new Date(query.endtime).getTime() : Number.POSITIVE_INFINITY
+    const observations = (payload.features ?? [])
+      .map(normalizeSgcFeature)
+      .filter((event): event is SourceObservation => Boolean(event))
+      .filter((event) => {
+        const eventTime = new Date(event.time).getTime()
+        return (
+          eventTime >= startTime &&
+          eventTime <= endTime &&
+          event.magnitude >= query.minmagnitude &&
+          distanceInKm(query.latitude, query.longitude, event.latitude, event.longitude) <= query.maxradiuskm
+        )
+      })
+      .slice(0, query.limit)
+
+    return {
+      status: { source: "SGC", ok: true, status: response.status, count: observations.length },
+      observations,
+    }
+  } catch (error) {
+    return {
+      status: {
+        source: "SGC",
+        ok: false,
+        count: 0,
+        message: error instanceof Error ? error.message : "No se pudo consultar SGC.",
+      },
+      observations: [],
+    }
+  }
+}
+
 export async function getEarthquakes(requestUrl: string): Promise<EarthquakeServiceResult> {
   const url = new URL(requestUrl, "https://red-help-ve.vercel.app")
   const latitude = readNumber(url.searchParams, "latitude", DEFAULT_LATITUDE, { min: -90, max: 90 })
@@ -678,7 +804,7 @@ export async function getEarthquakes(requestUrl: string): Promise<EarthquakeServ
     endtime: readDateTime(url.searchParams, "endtime"),
   }
 
-  const results = await Promise.all([loadUsgs(query), loadGeofon(query), loadEmsc(query), loadFunvisis(query)])
+  const results = await Promise.all([loadSgc(query), loadUsgs(query), loadGeofon(query), loadEmsc(query), loadFunvisis(query)])
   const sourceStatuses = results.map((result) => result.status)
   const observations = results.flatMap((result) => result.observations).filter(isNotFutureEvent)
   const events = mergeObservations(
