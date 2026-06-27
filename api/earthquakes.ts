@@ -16,7 +16,7 @@ function setCorsHeaders(res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.setHeader("Cache-Control", "s-maxage=90, stale-while-revalidate=180")
+  res.setHeader("Cache-Control", "s-maxage=15, stale-while-revalidate=30")
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

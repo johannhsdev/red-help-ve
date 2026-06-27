@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import type { EarthquakeApiResponse, EarthquakeEvent, UserLocation } from "../types/earthquake"
 
 const API_URL = "/api/earthquakes"
-const REFRESH_INTERVAL_MS = 90_000
+const REFRESH_INTERVAL_MS = 15_000
 
 function buildUrl(userLocation: UserLocation | null) {
   const params = new URLSearchParams({
