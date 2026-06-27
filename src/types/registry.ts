@@ -103,3 +103,45 @@ export type HospitalPatientDraft = Omit<
   | "familyFoundAt"
   | "createdAt"
 >
+
+export interface ShelterPerson {
+  id: number
+  shelterId: number
+  nationalId?: string
+  name: string
+  age?: number
+  notes?: string
+  verifiedInShelter: boolean
+  foundByFamily: boolean
+  verifiedAt?: number
+  familyFoundAt?: number
+  createdAt: number
+}
+
+export interface Shelter {
+  id: number
+  name: string
+  city: string
+  state?: string
+  address: string
+  latitude: number
+  longitude: number
+  contactPhone?: string
+  notes?: string
+  status: "active" | "closed"
+  people: ShelterPerson[]
+  createdAt: number
+}
+
+export type ShelterDraft = Omit<Shelter, "id" | "people" | "createdAt" | "status">
+
+export type ShelterPersonDraft = Omit<
+  ShelterPerson,
+  | "id"
+  | "shelterId"
+  | "verifiedInShelter"
+  | "foundByFamily"
+  | "verifiedAt"
+  | "familyFoundAt"
+  | "createdAt"
+>

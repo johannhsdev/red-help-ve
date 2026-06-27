@@ -1,18 +1,21 @@
 import { useState } from "react"
 import { Analytics } from "@vercel/analytics/react"
-import { AlertTriangle, HeartHandshake, Hospital, MapPinned, ShieldCheck, UsersRound } from "lucide-react"
+import { AlertTriangle, HeartHandshake, Home, Hospital, MapPinned, ShieldCheck, UsersRound } from "lucide-react"
 import { AffectedSitesView } from "./components/AffectedSitesView"
 import { HospitalCentersView } from "./components/HospitalCentersView"
 import { RegistryView } from "./components/RegistryView"
+import { SheltersView } from "./components/SheltersView"
 import { useAffectedSites } from "./hooks/useAffectedSites"
 import { useHospitalCenters } from "./hooks/useHospitalCenters"
 import { useRegistry } from "./hooks/useRegistry"
+import { useShelters } from "./hooks/useShelters"
 
 function App() {
   const registry = useRegistry()
   const affectedSites = useAffectedSites()
   const hospitalCenters = useHospitalCenters()
-  const [activeTab, setActiveTab] = useState<"persons" | "centers" | "hospitals" | "affected">("persons")
+  const shelters = useShelters()
+  const [activeTab, setActiveTab] = useState<"persons" | "centers" | "hospitals" | "shelters" | "affected">("persons")
   const missingCount = registry.records.filter(
     (record) => record.type === "persons" && record.status === "missing",
   ).length
@@ -25,6 +28,11 @@ function App() {
   const hospitalCount = hospitalCenters.centers.length
   const hospitalPatientCount = hospitalCenters.centers.reduce(
     (total, center) => total + center.patients.length,
+    0,
+  )
+  const shelterCount = shelters.shelters.length
+  const shelteredPeopleCount = shelters.shelters.reduce(
+    (total, shelter) => total + shelter.people.length,
     0,
   )
   const stats = [
@@ -51,6 +59,12 @@ function App() {
       value: hospitalPatientCount,
       icon: Hospital,
       tone: "text-rose-300",
+    },
+    {
+      label: "Personas en refugios",
+      value: shelteredPeopleCount,
+      icon: Home,
+      tone: "text-emerald-300",
     },
     {
       label: "Zonas afectadas",
@@ -108,7 +122,7 @@ function App() {
                 filtrar en tiempo real.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
               {stats.map((stat) => {
                 const Icon = stat.icon
                 return (
@@ -144,7 +158,7 @@ function App() {
                   : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
               }`}
             >
-              Pacientes
+              Desaparecidos
               <span className="text-xs opacity-70">{personCount}</span>
             </button>
             <button
@@ -158,6 +172,18 @@ function App() {
             >
               Centros hospitalarios
               <span className="text-xs opacity-70">{hospitalCount}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("shelters")}
+              className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                activeTab === "shelters"
+                  ? "border-[#f4f4f5] bg-[#f4f4f5] text-[#18181b]"
+                  : "border-[#2f2f32] bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--muted)]"
+              }`}
+            >
+              Refugios
+              <span className="text-xs opacity-70">{shelterCount}</span>
             </button>
             <button
               type="button"
@@ -188,6 +214,7 @@ function App() {
           {activeTab === "persons" && <RegistryView registry={registry} mode="persons" />}
           {activeTab === "centers" && <RegistryView registry={registry} mode="centers" />}
           {activeTab === "hospitals" && <HospitalCentersView hospitalCenters={hospitalCenters} />}
+          {activeTab === "shelters" && <SheltersView shelters={shelters} />}
           {activeTab === "affected" && (
             <AffectedSitesView affectedSites={affectedSites} />
           )}

@@ -8,6 +8,10 @@ import type {
   HospitalPatientDraft,
   RegistryDraft,
   RegistryRecord,
+  Shelter,
+  ShelterDraft,
+  ShelterPerson,
+  ShelterPersonDraft,
 } from "../types/registry"
 
 export interface PersonRow {
@@ -93,6 +97,34 @@ export interface HospitalPatientRow {
   age: number | null
   notes: string | null
   verified_in_hospital: boolean | null
+  found_by_family: boolean | null
+  verified_at: string | null
+  family_found_at: string | null
+  created_at: string
+}
+
+export interface ShelterRow {
+  id: number
+  name: string | null
+  city: string | null
+  state: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  contact_phone: string | null
+  notes: string | null
+  status: "active" | "closed" | string | null
+  created_at: string
+}
+
+export interface ShelterPersonRow {
+  id: number
+  shelter_id: number | null
+  national_id: string | null
+  name: string | null
+  age: number | null
+  notes: string | null
+  verified_in_shelter: boolean | null
   found_by_family: boolean | null
   verified_at: string | null
   family_found_at: string | null
@@ -243,6 +275,44 @@ export function hospitalCenterRowToRecord(
   }
 }
 
+export function shelterPersonRowToRecord(row: ShelterPersonRow): ShelterPerson {
+  return {
+    id: row.id,
+    shelterId: row.shelter_id ?? 0,
+    nationalId: row.national_id ?? undefined,
+    name: row.name ?? "",
+    age: row.age ?? undefined,
+    notes: row.notes ?? undefined,
+    verifiedInShelter: Boolean(row.verified_in_shelter),
+    foundByFamily: Boolean(row.found_by_family),
+    verifiedAt: optionalTimestamp(row.verified_at),
+    familyFoundAt: optionalTimestamp(row.family_found_at),
+    createdAt: new Date(row.created_at).getTime(),
+  }
+}
+
+export function shelterRowToRecord(row: ShelterRow, people: ShelterPersonRow[]): Shelter {
+  const shelterPeople = people
+    .filter((person) => person.shelter_id === row.id)
+    .map(shelterPersonRowToRecord)
+    .sort((a, b) => b.createdAt - a.createdAt)
+
+  return {
+    id: row.id,
+    name: row.name ?? "",
+    city: row.city ?? "",
+    state: row.state ?? undefined,
+    address: row.address ?? "",
+    latitude: row.latitude ?? 0,
+    longitude: row.longitude ?? 0,
+    contactPhone: row.contact_phone ?? undefined,
+    notes: row.notes ?? undefined,
+    status: row.status === "closed" ? "closed" : "active",
+    people: shelterPeople,
+    createdAt: new Date(row.created_at).getTime(),
+  }
+}
+
 export function draftToPersonInsert(draft: Extract<RegistryDraft, { type: "persons" }>, photoUrl: string) {
   return {
     name: draft.name,
@@ -303,6 +373,30 @@ export function draftToHospitalCenterInsert(draft: HospitalCenterDraft) {
 export function draftToHospitalPatientRpc(draft: HospitalPatientDraft, hospitalCenterId: number) {
   return {
     p_hospital_center_id: hospitalCenterId,
+    p_national_id: draft.nationalId ?? null,
+    p_name: draft.name,
+    p_age: draft.age ?? null,
+    p_notes: draft.notes ?? null,
+  }
+}
+
+export function draftToShelterInsert(draft: ShelterDraft) {
+  return {
+    name: draft.name,
+    city: draft.city,
+    state: draft.state ?? null,
+    address: draft.address,
+    latitude: draft.latitude,
+    longitude: draft.longitude,
+    contact_phone: draft.contactPhone ?? null,
+    notes: draft.notes ?? null,
+    status: "active",
+  }
+}
+
+export function draftToShelterPersonRpc(draft: ShelterPersonDraft, shelterId: number) {
+  return {
+    p_shelter_id: shelterId,
     p_national_id: draft.nationalId ?? null,
     p_name: draft.name,
     p_age: draft.age ?? null,

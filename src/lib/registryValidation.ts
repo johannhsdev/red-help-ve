@@ -3,6 +3,8 @@ import type {
   HospitalCenterDraft,
   HospitalPatientDraft,
   RegistryDraft,
+  ShelterDraft,
+  ShelterPersonDraft,
 } from "../types/registry"
 
 const PHONE_RE = /^\+?[0-9\s().-]{7,24}$/
@@ -186,6 +188,61 @@ export function validateHospitalPatientDraft(draft: HospitalPatientDraft): Hospi
     throw new Error("La cedula debe tener solo numeros, sin puntos, guiones ni letras.")
   }
   if (!name) throw new Error("Indica el nombre del paciente.")
+  if (draft.age !== undefined && age === undefined) {
+    throw new Error("Indica una edad valida.")
+  }
+
+  return {
+    nationalId: nationalId || undefined,
+    name,
+    age,
+    notes,
+  }
+}
+
+export function validateShelterDraft(draft: ShelterDraft): ShelterDraft {
+  const name = clean(draft.name, 140)
+  const city = clean(draft.city, 80)
+  const state = cleanOptional(draft.state, 80)
+  const address = clean(draft.address, 180)
+  const contactPhone = cleanOptional(draft.contactPhone, 24)
+  const notes = cleanOptional(draft.notes, 500)
+
+  if (!name) throw new Error("Indica el nombre del refugio.")
+  if (!city) throw new Error("Indica la ciudad.")
+  if (!address) throw new Error("Indica la direccion o referencia.")
+  if (!Number.isFinite(draft.latitude) || !Number.isFinite(draft.longitude)) {
+    throw new Error("Marca la ubicacion del refugio en el mapa.")
+  }
+  if (draft.latitude < -90 || draft.latitude > 90 || draft.longitude < -180 || draft.longitude > 180) {
+    throw new Error("La ubicacion marcada no es valida.")
+  }
+  if (contactPhone && !PHONE_RE.test(contactPhone)) {
+    throw new Error("Revisa el formato del numero de contacto.")
+  }
+
+  return {
+    name,
+    city,
+    state,
+    address,
+    latitude: draft.latitude,
+    longitude: draft.longitude,
+    contactPhone,
+    notes,
+  }
+}
+
+export function validateShelterPersonDraft(draft: ShelterPersonDraft): ShelterPersonDraft {
+  const nationalId = clean(draft.nationalId ?? "", 12)
+  const name = clean(draft.name, 140)
+  const notes = cleanOptional(draft.notes, 500)
+  const age = cleanOptionalNumber(draft.age, 120)
+
+  if (nationalId && !/^[0-9]{5,12}$/.test(nationalId)) {
+    throw new Error("La cedula debe tener solo numeros, sin puntos, guiones ni letras.")
+  }
+  if (!name) throw new Error("Indica el nombre de la persona refugiada.")
   if (draft.age !== undefined && age === undefined) {
     throw new Error("Indica una edad valida.")
   }
