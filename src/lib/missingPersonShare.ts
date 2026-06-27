@@ -19,12 +19,30 @@ function personDetails(person: MissingPerson) {
   return { age, lastSeen, location, contactName, contacts }
 }
 
+function personStatusLabel(person: MissingPerson) {
+  return person.status === "found" ? "Encontrada" : "Desaparecida"
+}
+
+function personStatusEmoji(person: MissingPerson) {
+  return person.status === "found" ? "🟢" : "🔴"
+}
+
+function personStatusColor(person: MissingPerson) {
+  return person.status === "found" ? "#16a34a" : "#dc2626"
+}
+
+function personShareTitle(person: MissingPerson) {
+  return person.status === "found" ? "Persona encontrada" : "Persona desaparecida"
+}
+
 export function missingPersonShareMessage(person: MissingPerson) {
   const { age, lastSeen, location, contactName, contacts } = personDetails(person)
+  const statusLabel = personStatusLabel(person)
   const lines: Array<string | null> = [
-    "Persona desaparecida",
+    personShareTitle(person),
     "",
     `Nombre: ${person.name}`,
+    `${personStatusEmoji(person)} Estatus: ${statusLabel}`,
     age ? `Edad: ${age} años` : null,
     location ? `Vive en: ${location}` : null,
     lastSeen ? `Última vez visto/a: ${lastSeen}` : null,
@@ -75,6 +93,41 @@ function drawCoverImage(
   ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height)
 }
 
+function roundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  ctx.beginPath()
+  ctx.moveTo(x + radius, y)
+  ctx.arcTo(x + width, y, x + width, y + height, radius)
+  ctx.arcTo(x + width, y + height, x, y + height, radius)
+  ctx.arcTo(x, y + height, x, y, radius)
+  ctx.arcTo(x, y, x + width, y, radius)
+  ctx.closePath()
+}
+
+function drawStatusBadge(ctx: CanvasRenderingContext2D, person: MissingPerson) {
+  const label = personStatusLabel(person).toUpperCase()
+  const x = 40
+  const y = 40
+  const height = 74
+  const paddingX = 28
+
+  ctx.font = "900 34px Inter, Arial, sans-serif"
+  const width = Math.ceil(ctx.measureText(label).width + paddingX * 2)
+
+  roundedRect(ctx, x, y, width, height, 18)
+  ctx.fillStyle = personStatusColor(person)
+  ctx.fill()
+
+  ctx.fillStyle = "#ffffff"
+  ctx.fillText(label, x + paddingX, y + 48)
+}
+
 function canvasToBlob(canvas: HTMLCanvasElement) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
@@ -100,6 +153,7 @@ async function createMissingPersonSharePhoto(person: MissingPerson) {
   ctx.fillStyle = "#0f172a"
   ctx.fillRect(0, 0, SHARE_PHOTO_SIZE, SHARE_PHOTO_SIZE)
   drawCoverImage(ctx, image, 0, 0, SHARE_PHOTO_SIZE, SHARE_PHOTO_SIZE)
+  drawStatusBadge(ctx, person)
 
   const blob = await canvasToBlob(canvas)
   return new File([blob], `desaparecido-${person.id}.png`, { type: "image/png" })
@@ -121,13 +175,14 @@ async function copyShareText(message: string) {
 
 export async function shareMissingPerson(person: MissingPerson): Promise<ShareResult> {
   const message = missingPersonShareMessage(person)
+  const title = `${personShareTitle(person)}: ${person.name}`
 
   try {
     const file = await createMissingPersonSharePhoto(person)
     if (canShareFiles([file])) {
       await copyShareText(message)
       await navigator.share({
-        title: `Persona desaparecida: ${person.name}`,
+        title,
         text: message,
         files: [file],
       })
@@ -140,7 +195,7 @@ export async function shareMissingPerson(person: MissingPerson): Promise<ShareRe
   if (navigator.share) {
     try {
       await navigator.share({
-        title: `Persona desaparecida: ${person.name}`,
+        title,
         text: message,
       })
       return "native"
