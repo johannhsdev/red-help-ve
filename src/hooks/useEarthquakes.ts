@@ -137,51 +137,56 @@ export function useEarthquakes() {
 
   const registerPushSubscription = useCallback(async (threshold: number) => {
     setPushError("")
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setPushError("Este navegador no soporta Web Push.")
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        setPushError("Este navegador no soporta Web Push.")
+        return false
+      }
+
+      const permission = notificationPermission() === "granted"
+        ? "granted"
+        : await requestAlarmPermission()
+
+      if (permission !== "granted") {
+        setPushError("Activa los permisos de notificacion para recibir alertas con la app cerrada.")
+        return false
+      }
+
+      const keyResponse = await fetch(PUSH_SUBSCRIPTIONS_URL)
+      const keyPayload = (await keyResponse.json()) as { ok?: boolean; publicKey?: string; message?: string }
+      if (!keyResponse.ok || !keyPayload.publicKey) {
+        setPushError(keyPayload.message || "Falta configurar la clave publica VAPID.")
+        return false
+      }
+
+      const registration = await navigator.serviceWorker.ready
+      const existingSubscription = await registration.pushManager.getSubscription()
+      const subscription = existingSubscription ?? await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyPayload.publicKey),
+      })
+
+      const response = await fetch(PUSH_SUBSCRIPTIONS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subscription: subscription.toJSON(),
+          threshold,
+        }),
+      })
+
+      const payload = (await response.json()) as { ok?: boolean; message?: string }
+      if (!response.ok || !payload.ok) {
+        setPushError(payload.message || "No se pudo guardar la suscripcion push.")
+        return false
+      }
+
+      setPushStatus("Web Push activo para alertas con la PWA cerrada.")
+      return true
+    } catch (err) {
+      setPushError(err instanceof Error ? err.message : "Error al activar Web Push.")
       return false
     }
-
-    const permission = notificationPermission() === "granted"
-      ? "granted"
-      : await requestAlarmPermission()
-
-    if (permission !== "granted") {
-      setPushError("Activa los permisos de notificacion para recibir alertas con la app cerrada.")
-      return false
-    }
-
-    const keyResponse = await fetch(PUSH_SUBSCRIPTIONS_URL)
-    const keyPayload = (await keyResponse.json()) as { ok?: boolean; publicKey?: string; message?: string }
-    if (!keyResponse.ok || !keyPayload.publicKey) {
-      setPushError(keyPayload.message || "Falta configurar la clave publica VAPID.")
-      return false
-    }
-
-    const registration = await navigator.serviceWorker.ready
-    const existingSubscription = await registration.pushManager.getSubscription()
-    const subscription = existingSubscription ?? await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(keyPayload.publicKey),
-    })
-
-    const response = await fetch(PUSH_SUBSCRIPTIONS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        subscription: subscription.toJSON(),
-        threshold,
-      }),
-    })
-
-    const payload = (await response.json()) as { ok?: boolean; message?: string }
-    if (!response.ok || !payload.ok) {
-      setPushError(payload.message || "No se pudo guardar la suscripcion push.")
-      return false
-    }
-
-    setPushStatus("Web Push activo para alertas con la PWA cerrada.")
-    return true
   }, [requestAlarmPermission])
 
   const unregisterPushSubscription = useCallback(async () => {
