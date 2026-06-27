@@ -24,9 +24,7 @@ const vapidPublicKey = process.env.VAPID_PUBLIC_KEY ?? process.env.VITE_VAPID_PU
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY
 const vapidSubject = process.env.VAPID_SUBJECT ?? "mailto:alertas@red-help-ve.vercel.app"
 
-if (vapidPublicKey && vapidPrivateKey) {
-  webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
-}
+let webPushConfigured = false
 
 export function getServerSupabase() {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
@@ -41,6 +39,10 @@ export function getServerSupabase() {
 export function assertWebPushConfigured() {
   if (!vapidPublicKey || !vapidPrivateKey) {
     throw new Error("Faltan VAPID_PUBLIC_KEY/VITE_VAPID_PUBLIC_KEY o VAPID_PRIVATE_KEY.")
+  }
+  if (!webPushConfigured) {
+    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
+    webPushConfigured = true
   }
 }
 
