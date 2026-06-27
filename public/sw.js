@@ -1,4 +1,4 @@
-const CACHE_NAME = "red-help-ve-shell-v1"
+const CACHE_NAME = "red-help-ve-shell-v2"
 const SHELL_ASSETS = ["/", "/favicon.svg", "/manifest.webmanifest"]
 
 self.addEventListener("install", (event) => {
