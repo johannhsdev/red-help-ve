@@ -9,8 +9,10 @@ import {
   MapPin,
   RefreshCw,
   Ruler,
+  Share2,
   Waves,
 } from "lucide-react"
+import { shareEarthquake } from "../lib/earthquakeShare"
 import type { EarthquakesState } from "../hooks/useEarthquakes"
 import type { EarthquakeEvent, EarthquakeSource } from "../types/earthquake"
 import { Dialog } from "./ui/Dialog"
@@ -117,12 +119,21 @@ function EarthquakeCard({
   event: EarthquakeEvent
   onSelect: (event: EarthquakeEvent) => void
 }) {
+  const [sharing, setSharing] = useState(false)
+
+  async function handleShare(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (sharing) return
+    setSharing(true)
+    try {
+      await shareEarthquake(event)
+    } finally {
+      setSharing(false)
+    }
+  }
+
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(event)}
-      className="grid w-full cursor-pointer gap-3 rounded-[10px] border border-[#2a2a2d] bg-[#151515] p-4 text-left transition-colors hover:border-[#3e3e42] hover:bg-[#191919] sm:grid-cols-[88px_minmax(0,1fr)_auto]"
-    >
+    <div className="grid w-full gap-3 rounded-[10px] border border-[#2a2a2d] bg-[#151515] p-4 transition-colors hover:border-[#3e3e42] hover:bg-[#191919] sm:grid-cols-[88px_minmax(0,1fr)_auto]">
       <span
         className={`flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-lg border text-center ${magnitudeTone(
           event.magnitude,
@@ -171,11 +182,26 @@ function EarthquakeCard({
         </span>
       </span>
 
-      <span className="flex items-center gap-1.5 text-sm font-bold text-[#d7dce3] sm:self-center">
-        Detalle
-        <ExternalLink className="size-4" aria-hidden="true" />
+      <span className="flex flex-col items-end justify-center gap-2 sm:self-center">
+        <button
+          type="button"
+          onClick={() => onSelect(event)}
+          className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-bold text-[#d7dce3] hover:text-white"
+        >
+          Detalle
+          <ExternalLink className="size-4" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => void handleShare(e)}
+          disabled={sharing}
+          className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-bold text-[#25d366] hover:text-[#4ade80] disabled:opacity-50"
+        >
+          <Share2 className="size-4" aria-hidden="true" />
+          {sharing ? "Preparando..." : "Compartir"}
+        </button>
       </span>
-    </button>
+    </div>
   )
 }
 
