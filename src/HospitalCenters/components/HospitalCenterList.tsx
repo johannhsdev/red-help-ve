@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import { Building2, Search } from "lucide-react"
-import type { HospitalCentersState } from "../hooks/useHospitalCenters"
-import { HospitalCenterAccordion } from "./HospitalCenterAccordion"
-import { HospitalCenterDialog } from "./HospitalCenterDialog"
+import type { IHospitalCenter, IHospitalCenterDraft, IHospitalPatient, IHospitalPatientDraft } from "../../Interfaces/IHospitalCenter"
+import { HospitalCenterCard } from "./HospitalCenterCard"
 
-function centerMatchesQuery(center: HospitalCentersState["centers"][number], query: string) {
+type VerificationPatch = { verifiedInHospital?: boolean; foundByFamily?: boolean }
+
+function centerMatchesQuery(center: IHospitalCenter, query: string) {
   if (!query) return true
   const centerText = [
     center.name,
@@ -24,12 +25,23 @@ function centerMatchesQuery(center: HospitalCentersState["centers"][number], que
   )
 }
 
-export function HospitalCentersView({
-  hospitalCenters,
+export function HospitalCenterList({
+  centers,
+  loaded,
+  error,
+  onAddCenter: _onAddCenter,
+  onAddPatient,
+  onUpdatePatientVerification,
+  renderForm,
 }: {
-  hospitalCenters: HospitalCentersState
+  centers: IHospitalCenter[]
+  loaded: boolean
+  error: string
+  onAddCenter: (draft: IHospitalCenterDraft) => Promise<IHospitalCenter>
+  onAddPatient: (hospitalCenterId: number, draft: IHospitalPatientDraft) => Promise<IHospitalPatient>
+  onUpdatePatientVerification: (patientId: number, patch: VerificationPatch) => Promise<IHospitalPatient>
+  renderForm: () => ReactNode
 }) {
-  const { centers, loaded, error, addCenter, addPatient, updatePatientVerification } = hospitalCenters
   const [query, setQuery] = useState("")
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -52,7 +64,7 @@ export function HospitalCentersView({
             aria-label="Buscar centros hospitalarios"
           />
         </div>
-        <HospitalCenterDialog onAdd={addCenter} />
+        {renderForm()}
       </div>
 
       {error ? (
@@ -76,12 +88,12 @@ export function HospitalCentersView({
           </p>
           <div className="flex flex-col gap-4">
             {filtered.map((center) => (
-              <HospitalCenterAccordion
+              <HospitalCenterCard
                 key={center.id}
                 center={center}
                 query={query}
-                onAddPatient={addPatient}
-                onUpdatePatientVerification={updatePatientVerification}
+                onAddPatient={onAddPatient}
+                onUpdatePatientVerification={onUpdatePatientVerification}
               />
             ))}
           </div>

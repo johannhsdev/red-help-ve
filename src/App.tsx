@@ -3,7 +3,7 @@ import { Analytics } from "@vercel/analytics/react"
 import { AlertTriangle, HeartHandshake, Home, Hospital, MapPinned, ShieldCheck, UsersRound, Waves } from "lucide-react"
 import { AffectedSitesView } from "./components/AffectedSitesView"
 import { EarthquakesView } from "./components/EarthquakesView"
-import { HospitalCentersView } from "./components/HospitalCentersView"
+import { HospitalCentersPage } from "./HospitalCenters/HospitalCentersPage"
 import { RegistryView } from "./components/RegistryView"
 import { MissingPersonsPage } from "./MissingPersons/MissingPersonsPage"
 import { SheltersView } from "./components/SheltersView"
@@ -249,7 +249,7 @@ function App() {
 
           {activeTab === "persons" && <MissingPersonsPage />}
           {activeTab === "centers" && <RegistryView registry={registry} mode="centers" />}
-          {activeTab === "hospitals" && <HospitalCentersView hospitalCenters={hospitalCenters} />}
+          {activeTab === "hospitals" && <HospitalCentersPage />}
           {activeTab === "shelters" && <SheltersView shelters={shelters} />}
           {activeTab === "affected" && (
             <AffectedSitesView affectedSites={affectedSites} />

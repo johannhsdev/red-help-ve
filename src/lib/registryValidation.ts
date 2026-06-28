@@ -1,11 +1,10 @@
 import type {
   AffectedSiteDraft,
-  HospitalCenterDraft,
-  HospitalPatientDraft,
   RegistryDraft,
   ShelterDraft,
   ShelterPersonDraft,
 } from "../types/registry"
+import type { IHospitalCenterDraft, IHospitalPatientDraft } from "../Interfaces/IHospitalCenter"
 
 const PHONE_RE = /^\+?[0-9\s().-]{7,24}$/
 const CEDULA_RE = /^[VEJPGvejpg]?-?[0-9.]{5,14}$/
@@ -153,7 +152,7 @@ export function validateAffectedSiteDraft(draft: AffectedSiteDraft): AffectedSit
   }
 }
 
-export function validateHospitalCenterDraft(draft: HospitalCenterDraft): HospitalCenterDraft {
+export function validateHospitalCenterDraft(draft: IHospitalCenterDraft): IHospitalCenterDraft {
   const name = clean(draft.name, 140)
   const city = clean(draft.city, 80)
   const state = cleanOptional(draft.state, 80)
@@ -178,7 +177,7 @@ export function validateHospitalCenterDraft(draft: HospitalCenterDraft): Hospita
   }
 }
 
-export function validateHospitalPatientDraft(draft: HospitalPatientDraft): HospitalPatientDraft {
+export function validateHospitalPatientDraft(draft: IHospitalPatientDraft): IHospitalPatientDraft {
   const nationalId = clean(draft.nationalId ?? "", 12)
   const name = clean(draft.name, 140)
   const notes = cleanOptional(draft.notes, 500)

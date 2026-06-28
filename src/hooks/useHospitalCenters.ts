@@ -1,53 +1,37 @@
 import { useCallback, useEffect, useState } from "react"
-import type { HospitalCenter, HospitalCenterDraft, HospitalPatient, HospitalPatientDraft } from "../types/registry"
+import type { IHospitalCenter, IHospitalCenterDraft, IHospitalPatient, IHospitalPatientDraft } from "../Interfaces/IHospitalCenter"
 import {
-  draftToHospitalCenterInsert,
-  draftToHospitalPatientRpc,
-  hospitalCenterRowToRecord,
-  hospitalPatientRowToRecord,
-  type HospitalCenterRow,
-  type HospitalPatientRow,
-} from "../lib/registryMapper"
-import { supabase } from "../lib/supabase"
-import { validateHospitalCenterDraft, validateHospitalPatientDraft } from "../lib/registryValidation"
+  HospitalCenterList,
+  HospitalCenterCreate,
+  HospitalPatientCreate,
+  HospitalPatientUpdateVerification,
+} from "../Services/HospitalCenterService"
 
-function sortCenters(centers: HospitalCenter[]) {
+function sortCenters(centers: IHospitalCenter[]) {
   return [...centers].sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
 }
 
-function sortPatients(patients: HospitalPatient[]) {
+function sortPatients(patients: IHospitalPatient[]) {
   return [...patients].sort((a, b) => b.createdAt - a.createdAt)
 }
 
 export function useHospitalCenters() {
-  const [centers, setCenters] = useState<HospitalCenter[]>([])
+  const [centers, setCenters] = useState<IHospitalCenter[]>([])
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState("")
 
   const loadCenters = useCallback(async () => {
     setLoaded(false)
     setError("")
-
-    const [centersRequest, patientsRequest] = await Promise.all([
-      supabase.from("hospital_centers").select("*").order("city", { ascending: true }),
-      supabase.from("hospital_patients").select("*").order("created_at", { ascending: false }),
-    ])
-
-    const requestError = centersRequest.error || patientsRequest.error
-    if (requestError) {
-      setError(requestError.message)
+    try {
+      const data = await HospitalCenterList()
+      setCenters(sortCenters(data))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cargar centros hospitalarios.")
       setCenters([])
+    } finally {
       setLoaded(true)
-      return
     }
-
-    const patients = (patientsRequest.data ?? []) as HospitalPatientRow[]
-    const nextCenters = ((centersRequest.data ?? []) as HospitalCenterRow[]).map((row) =>
-      hospitalCenterRowToRecord(row, patients),
-    )
-
-    setCenters(sortCenters(nextCenters))
-    setLoaded(true)
   }, [])
 
   useEffect(() => {
@@ -57,31 +41,14 @@ export function useHospitalCenters() {
     return () => window.clearTimeout(timeout)
   }, [loadCenters])
 
-  const addCenter = useCallback(async (draft: HospitalCenterDraft) => {
-    const cleanDraft = validateHospitalCenterDraft(draft)
-    const { data, error: insertError } = await supabase
-      .from("hospital_centers")
-      .insert(draftToHospitalCenterInsert(cleanDraft))
-      .select("*")
-      .single()
-
-    if (insertError) throw new Error(insertError.message)
-
-    const next = hospitalCenterRowToRecord(data as HospitalCenterRow, [])
+  const addCenter = useCallback(async (draft: IHospitalCenterDraft) => {
+    const next = await HospitalCenterCreate(draft)
     setCenters((current) => sortCenters([next, ...current]))
     return next
   }, [])
 
-  const addPatient = useCallback(async (hospitalCenterId: number, draft: HospitalPatientDraft) => {
-    const cleanDraft = validateHospitalPatientDraft(draft)
-    const { data, error: insertError } = await supabase.rpc(
-      "add_hospital_patient",
-      draftToHospitalPatientRpc(cleanDraft, hospitalCenterId),
-    )
-
-    if (insertError) throw new Error(insertError.message)
-
-    const next = hospitalPatientRowToRecord(data as HospitalPatientRow)
+  const addPatient = useCallback(async (hospitalCenterId: number, draft: IHospitalPatientDraft) => {
+    const next = await HospitalPatientCreate(hospitalCenterId, draft)
     setCenters((current) =>
       current.map((center) =>
         center.id === hospitalCenterId
@@ -97,15 +64,7 @@ export function useHospitalCenters() {
       patientId: number,
       verification: { verifiedInHospital?: boolean; foundByFamily?: boolean },
     ) => {
-      const { data, error: updateError } = await supabase.rpc("update_hospital_patient_verification", {
-        p_patient_id: patientId,
-        p_verified_in_hospital: verification.verifiedInHospital ?? null,
-        p_found_by_family: verification.foundByFamily ?? null,
-      })
-
-      if (updateError) throw new Error(updateError.message)
-
-      const next = hospitalPatientRowToRecord(data as HospitalPatientRow)
+      const next = await HospitalPatientUpdateVerification(patientId, verification)
       setCenters((current) =>
         current.map((center) =>
           center.id === next.hospitalCenterId

@@ -8,10 +8,10 @@ import {
   UserPlus,
   UsersRound,
 } from "lucide-react"
-import type { HospitalCenter, HospitalPatient, HospitalPatientDraft } from "../types/registry"
-import { Badge } from "./ui/Badge"
-import { Button } from "./ui/Button"
-import { Input, Label, Textarea } from "./ui/Input"
+import type { IHospitalCenter, IHospitalPatient, IHospitalPatientDraft } from "../../Interfaces/IHospitalCenter"
+import { Badge } from "../../components/ui/Badge"
+import { Button } from "../../components/ui/Button"
+import { Input, Label, Textarea } from "../../components/ui/Input"
 
 type VerificationPatch = {
   verifiedInHospital?: boolean
@@ -28,7 +28,7 @@ function formatDate(timestamp: number | undefined) {
   }).format(timestamp)
 }
 
-function patientMatches(patient: HospitalPatient, query: string) {
+function patientMatches(patient: IHospitalPatient, query: string) {
   if (!query) return true
   return [patient.name, patient.nationalId ?? "", patient.notes ?? ""].join(" ").toLowerCase().includes(query)
 }
@@ -38,27 +38,23 @@ function patientCountLabel(count: number) {
 }
 
 function hospitalVerifiedLabel(count: number) {
-  return count === 1
-    ? "1 ubicado en este hospital"
-    : `${count} ubicados en este hospital`
+  return count === 1 ? "1 ubicado en este hospital" : `${count} ubicados en este hospital`
 }
 
 function familyFoundLabel(count: number) {
-  return count === 1
-    ? "1 localizado por familiar"
-    : `${count} localizados por familiares`
+  return count === 1 ? "1 localizado por familiar" : `${count} localizados por familiares`
 }
 
-export function HospitalCenterAccordion({
+export function HospitalCenterCard({
   center,
   query,
   onAddPatient,
   onUpdatePatientVerification,
 }: {
-  center: HospitalCenter
+  center: IHospitalCenter
   query: string
-  onAddPatient: (hospitalCenterId: number, patient: HospitalPatientDraft) => Promise<HospitalPatient>
-  onUpdatePatientVerification: (patientId: number, patch: VerificationPatch) => Promise<HospitalPatient>
+  onAddPatient: (hospitalCenterId: number, draft: IHospitalPatientDraft) => Promise<IHospitalPatient>
+  onUpdatePatientVerification: (patientId: number, patch: VerificationPatch) => Promise<IHospitalPatient>
 }) {
   const [nationalId, setNationalId] = useState("")
   const [name, setName] = useState("")
@@ -83,7 +79,7 @@ export function HospitalCenterAccordion({
     e.preventDefault()
     setError("")
 
-    const draft: HospitalPatientDraft = {
+    const draft: IHospitalPatientDraft = {
       nationalId: nationalId || undefined,
       name,
       age: age ? Number(age) : undefined,

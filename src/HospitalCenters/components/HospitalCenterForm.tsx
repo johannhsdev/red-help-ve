@@ -1,14 +1,14 @@
 import { useState, type FormEvent } from "react"
 import { Loader2, Plus } from "lucide-react"
-import type { HospitalCenter, HospitalCenterDraft } from "../types/registry"
-import { Button } from "./ui/Button"
-import { Dialog } from "./ui/Dialog"
-import { Input, Label, Textarea } from "./ui/Input"
+import type { IHospitalCenter, IHospitalCenterDraft } from "../../Interfaces/IHospitalCenter"
+import { Button } from "../../components/ui/Button"
+import { Dialog } from "../../components/ui/Dialog"
+import { Input, Label, Textarea } from "../../components/ui/Input"
 
-export function HospitalCenterDialog({
+export function HospitalCenterForm({
   onAdd,
 }: {
-  onAdd: (center: HospitalCenterDraft) => Promise<HospitalCenter>
+  onAdd: (draft: IHospitalCenterDraft) => Promise<IHospitalCenter>
 }) {
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -24,7 +24,7 @@ export function HospitalCenterDialog({
 
     const formElement = e.currentTarget
     const form = new FormData(formElement)
-    const draft: HospitalCenterDraft = {
+    const draft: IHospitalCenterDraft = {
       name: String(form.get("name") || "").trim(),
       city: String(form.get("city") || "").trim(),
       state: String(form.get("state") || "").trim() || undefined,
