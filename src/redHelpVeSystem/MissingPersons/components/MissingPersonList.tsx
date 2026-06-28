@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Search, HeartHandshake } from "lucide-react"
 import { MissingPersonCard } from "./MissingPersonCard"
-import type { IMissingPerson } from "../../Interfaces/IMissingPerson"
+import type { IMissingPerson } from "../../../Interfaces/IMissingPerson"
 
 const PAGE_SIZE = 6
 
@@ -70,7 +70,6 @@ export function MissingPersonList({ persons, loading, onReportFound, onReopen, h
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Search + header action */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 sm:max-w-[448px]">
           <Search
@@ -88,7 +87,6 @@ export function MissingPersonList({ persons, loading, onReportFound, onReopen, h
         {headerAction && <div className="ml-auto">{headerAction}</div>}
       </div>
 
-      {/* Results */}
       {loading ? (
         <p className="py-16 text-center text-[var(--muted-foreground)]">Cargando...</p>
       ) : shown.length === 0 ? (

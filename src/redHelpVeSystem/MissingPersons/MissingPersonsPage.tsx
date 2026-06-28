@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react"
-import { Button } from "../components/ui/Button"
-import { useMissingPerson } from "../hooks/useMissingPerson"
+import { Button } from "../../components/ui/Button"
+import { useMissingPerson } from "../../hooks/useMissingPerson"
 import { MissingPersonList } from "./components/MissingPersonList"
 import { MissingPersonForm } from "./components/MissingPersonForm"
 import { FoundDialog } from "./components/FoundDialog"

@@ -1,53 +1,37 @@
 import { useCallback, useEffect, useState } from "react"
-import type { Shelter, ShelterDraft, ShelterPerson, ShelterPersonDraft } from "../types/registry"
+import type { IShelter, IShelterDraft, IShelterPerson, IShelterPersonDraft } from "../Interfaces/IShelter"
 import {
-  draftToShelterInsert,
-  draftToShelterPersonRpc,
-  shelterPersonRowToRecord,
-  shelterRowToRecord,
-  type ShelterPersonRow,
-  type ShelterRow,
-} from "../lib/registryMapper"
-import { supabase } from "../lib/supabase"
-import { validateShelterDraft, validateShelterPersonDraft } from "../lib/registryValidation"
+  ShelterList,
+  ShelterCreate,
+  ShelterPersonAdd,
+  ShelterPersonUpdateVerification,
+} from "../Services/ShelterService"
 
-function sortShelters(shelters: Shelter[]) {
+function sortShelters(shelters: IShelter[]) {
   return [...shelters].sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
 }
 
-function sortPeople(people: ShelterPerson[]) {
+function sortPeople(people: IShelterPerson[]) {
   return [...people].sort((a, b) => b.createdAt - a.createdAt)
 }
 
 export function useShelters() {
-  const [shelters, setShelters] = useState<Shelter[]>([])
+  const [shelters, setShelters] = useState<IShelter[]>([])
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState("")
 
   const loadShelters = useCallback(async () => {
     setLoaded(false)
     setError("")
-
-    const [sheltersRequest, peopleRequest] = await Promise.all([
-      supabase.from("shelters").select("*").order("city", { ascending: true }),
-      supabase.from("shelter_people").select("*").order("created_at", { ascending: false }),
-    ])
-
-    const requestError = sheltersRequest.error || peopleRequest.error
-    if (requestError) {
-      setError(requestError.message)
+    try {
+      const data = await ShelterList()
+      setShelters(sortShelters(data))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cargar refugios.")
       setShelters([])
+    } finally {
       setLoaded(true)
-      return
     }
-
-    const people = (peopleRequest.data ?? []) as ShelterPersonRow[]
-    const nextShelters = ((sheltersRequest.data ?? []) as ShelterRow[]).map((row) =>
-      shelterRowToRecord(row, people),
-    )
-
-    setShelters(sortShelters(nextShelters))
-    setLoaded(true)
   }, [])
 
   useEffect(() => {
@@ -57,31 +41,14 @@ export function useShelters() {
     return () => window.clearTimeout(timeout)
   }, [loadShelters])
 
-  const addShelter = useCallback(async (draft: ShelterDraft) => {
-    const cleanDraft = validateShelterDraft(draft)
-    const { data, error: insertError } = await supabase
-      .from("shelters")
-      .insert(draftToShelterInsert(cleanDraft))
-      .select("*")
-      .single()
-
-    if (insertError) throw new Error(insertError.message)
-
-    const next = shelterRowToRecord(data as ShelterRow, [])
+  const addShelter = useCallback(async (draft: IShelterDraft) => {
+    const next = await ShelterCreate(draft)
     setShelters((current) => sortShelters([next, ...current]))
     return next
   }, [])
 
-  const addPerson = useCallback(async (shelterId: number, draft: ShelterPersonDraft) => {
-    const cleanDraft = validateShelterPersonDraft(draft)
-    const { data, error: insertError } = await supabase.rpc(
-      "add_shelter_person",
-      draftToShelterPersonRpc(cleanDraft, shelterId),
-    )
-
-    if (insertError) throw new Error(insertError.message)
-
-    const next = shelterPersonRowToRecord(data as ShelterPersonRow)
+  const addPerson = useCallback(async (shelterId: number, draft: IShelterPersonDraft) => {
+    const next = await ShelterPersonAdd(shelterId, draft)
     setShelters((current) =>
       current.map((shelter) =>
         shelter.id === shelterId
@@ -97,15 +64,7 @@ export function useShelters() {
       personId: number,
       verification: { verifiedInShelter?: boolean; foundByFamily?: boolean },
     ) => {
-      const { data, error: updateError } = await supabase.rpc("update_shelter_person_verification", {
-        p_person_id: personId,
-        p_verified_in_shelter: verification.verifiedInShelter ?? null,
-        p_found_by_family: verification.foundByFamily ?? null,
-      })
-
-      if (updateError) throw new Error(updateError.message)
-
-      const next = shelterPersonRowToRecord(data as ShelterPersonRow)
+      const next = await ShelterPersonUpdateVerification(personId, verification)
       setShelters((current) =>
         current.map((shelter) =>
           shelter.id === next.shelterId

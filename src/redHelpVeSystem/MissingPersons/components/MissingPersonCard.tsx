@@ -3,11 +3,11 @@ import {
   Phone, User, Calendar, IdCard,
   RotateCcw, Home, Building2, Maximize2, X, Loader2, Share2, MapPin,
 } from "lucide-react"
-import { Badge } from "../../components/ui/Badge"
-import { Button } from "../../components/ui/Button"
-import { shareMissingPerson } from "../../lib/missingPersonShare"
-import type { MissingPerson } from "../../types/registry"
-import type { IFoundInfo, IMissingPerson } from "../../Interfaces/IMissingPerson"
+import { Badge } from "../../../components/ui/Badge"
+import { Button } from "../../../components/ui/Button"
+import { shareMissingPerson } from "../../../lib/missingPersonShare"
+import type { MissingPerson } from "../../../types/registry"
+import type { IFoundInfo, IMissingPerson } from "../../../Interfaces/IMissingPerson"
 
 function ContactList({ contacts }: { contacts: string[] }) {
   return (
@@ -69,14 +69,8 @@ export function MissingPersonCard({ person, onReportFound, onReopen }: Props) {
   return (
     <>
       <article className="flex flex-col overflow-hidden rounded-2xl bg-[#151515] ring-1 ring-[#2a2a2d] transition-shadow hover:shadow-lg hover:shadow-black/30">
-        {/* Photo */}
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--muted)]">
-          <img
-            src={photoSrc}
-            alt={`Foto de ${person.name}`}
-            className="size-full object-cover"
-            loading="lazy"
-          />
+          <img src={photoSrc} alt={`Foto de ${person.name}`} className="size-full object-cover" loading="lazy" />
           <button
             type="button"
             onClick={() => setImageOpen(true)}
@@ -98,11 +92,8 @@ export function MissingPersonCard({ person, onReportFound, onReopen }: Props) {
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex flex-1 flex-col gap-3 px-4 py-5">
-          <h3 className="text-pretty text-xl font-extrabold leading-tight text-white">
-            {person.name}
-          </h3>
+          <h3 className="text-pretty text-xl font-extrabold leading-tight text-white">{person.name}</h3>
 
           <div className="flex flex-col gap-2 text-sm text-[#c7cbd1]">
             {person.cedula && (
@@ -138,12 +129,9 @@ export function MissingPersonCard({ person, onReportFound, onReopen }: Props) {
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex flex-col gap-3 border-t border-[#303033] px-4 py-4">
           <div>
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-[#aeb4bd]">
-              Contactos de emergencia
-            </p>
+            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-[#aeb4bd]">Contactos de emergencia</p>
             <ContactList contacts={person.contacts} />
           </div>
 

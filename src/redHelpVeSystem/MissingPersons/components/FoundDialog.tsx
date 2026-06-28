@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
 import { CheckCircle2, Home, Building2 } from "lucide-react"
-import { Dialog } from "../../components/ui/Dialog"
-import { Button } from "../../components/ui/Button"
-import { Input, Label } from "../../components/ui/Input"
-import type { SupplyCenter } from "../../types/registry"
-import type { IFoundInfo, IMissingPerson } from "../../Interfaces/IMissingPerson"
+import { Dialog } from "../../../components/ui/Dialog"
+import { Button } from "../../../components/ui/Button"
+import { Input, Label } from "../../../components/ui/Input"
+import type { SupplyCenter } from "../../../types/registry"
+import type { IFoundInfo, IMissingPerson } from "../../../Interfaces/IMissingPerson"
 
 type Place = "family" | "center"
 type CenterSource = "registrado" | "externo"
@@ -90,7 +90,6 @@ export function FoundDialog({ person, centers, onConfirm, onClose }: Props) {
       }
     >
       <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-4">
-        {/* Lugar */}
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -198,8 +197,7 @@ export function FoundDialog({ person, centers, onConfirm, onClose }: Props) {
                   />
                 </div>
                 <p className="text-xs text-[var(--muted-foreground)]">
-                  Este centro no está registrado en el sistema, así que solo se mostrará como
-                  información en la tarjeta.
+                  Este centro no está registrado en el sistema, así que solo se mostrará como información en la tarjeta.
                 </p>
               </>
             )}

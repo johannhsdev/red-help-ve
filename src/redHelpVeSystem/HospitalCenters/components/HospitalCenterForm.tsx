@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from "react"
 import { Loader2, Plus } from "lucide-react"
-import type { IHospitalCenter, IHospitalCenterDraft } from "../../Interfaces/IHospitalCenter"
-import { Button } from "../../components/ui/Button"
-import { Dialog } from "../../components/ui/Dialog"
-import { Input, Label, Textarea } from "../../components/ui/Input"
+import type { IHospitalCenter, IHospitalCenterDraft } from "../../../Interfaces/IHospitalCenter"
+import { Button } from "../../../components/ui/Button"
+import { Dialog } from "../../../components/ui/Dialog"
+import { Input, Label, Textarea } from "../../../components/ui/Input"
 
 export function HospitalCenterForm({
   onAdd,

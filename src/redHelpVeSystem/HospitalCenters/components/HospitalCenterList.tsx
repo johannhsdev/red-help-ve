@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react"
 import { Building2, Search } from "lucide-react"
-import type { IHospitalCenter, IHospitalCenterDraft, IHospitalPatient, IHospitalPatientDraft } from "../../Interfaces/IHospitalCenter"
+import type { IHospitalCenter, IHospitalCenterDraft, IHospitalPatient, IHospitalPatientDraft } from "../../../Interfaces/IHospitalCenter"
 import { HospitalCenterCard } from "./HospitalCenterCard"
 
 type VerificationPatch = { verifiedInHospital?: boolean; foundByFamily?: boolean }

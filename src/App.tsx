@@ -1,12 +1,12 @@
 import { useState } from "react"
 import { Analytics } from "@vercel/analytics/react"
 import { AlertTriangle, HeartHandshake, Home, Hospital, MapPinned, ShieldCheck, UsersRound, Waves } from "lucide-react"
-import { AffectedSitesView } from "./components/AffectedSitesView"
+import { AffectedSitesPage } from "./redHelpVeSystem/AffectedSites/AffectedSitesPage"
 import { EarthquakesView } from "./components/EarthquakesView"
-import { HospitalCentersPage } from "./HospitalCenters/HospitalCentersPage"
+import { HospitalCentersPage } from "./redHelpVeSystem/HospitalCenters/HospitalCentersPage"
 import { RegistryView } from "./components/RegistryView"
-import { MissingPersonsPage } from "./MissingPersons/MissingPersonsPage"
-import { SheltersView } from "./components/SheltersView"
+import { MissingPersonsPage } from "./redHelpVeSystem/MissingPersons/MissingPersonsPage"
+import { SheltersPage } from "./redHelpVeSystem/Shelters/SheltersPage"
 import { useAffectedSites } from "./hooks/useAffectedSites"
 import { useEarthquakes } from "./hooks/useEarthquakes"
 import { useHospitalCenters } from "./hooks/useHospitalCenters"
@@ -250,10 +250,8 @@ function App() {
           {activeTab === "persons" && <MissingPersonsPage />}
           {activeTab === "centers" && <RegistryView registry={registry} mode="centers" />}
           {activeTab === "hospitals" && <HospitalCentersPage />}
-          {activeTab === "shelters" && <SheltersView shelters={shelters} />}
-          {activeTab === "affected" && (
-            <AffectedSitesView affectedSites={affectedSites} />
-          )}
+          {activeTab === "shelters" && <SheltersPage />}
+          {activeTab === "affected" && <AffectedSitesPage />}
           {activeTab === "earthquakes" && <EarthquakesView earthquakes={earthquakes} />}
         </main>
       </div>

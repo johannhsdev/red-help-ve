@@ -1,4 +1,4 @@
-import { useHospitalCenters } from "../hooks/useHospitalCenters"
+import { useHospitalCenters } from "../../hooks/useHospitalCenters"
 import { HospitalCenterList } from "./components/HospitalCenterList"
 import { HospitalCenterForm } from "./components/HospitalCenterForm"
 

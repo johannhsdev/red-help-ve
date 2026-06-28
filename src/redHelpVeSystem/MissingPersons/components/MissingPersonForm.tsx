@@ -1,10 +1,10 @@
 import { useState, type ChangeEvent, type FormEvent } from "react"
 import { ImagePlus, Loader2, Plus, X } from "lucide-react"
-import { Dialog } from "../../components/ui/Dialog"
-import { Button } from "../../components/ui/Button"
-import { Input, Label, Textarea } from "../../components/ui/Input"
-import { ImageCropDialog } from "../../components/ImageCropDialog"
-import type { IMissingPersonDraft } from "../../Interfaces/IMissingPerson"
+import { Dialog } from "../../../components/ui/Dialog"
+import { Button } from "../../../components/ui/Button"
+import { Input, Label, Textarea } from "../../../components/ui/Input"
+import { ImageCropDialog } from "../../../components/ImageCropDialog"
+import type { IMissingPersonDraft } from "../../../Interfaces/IMissingPerson"
 
 interface Props {
   open: boolean
@@ -95,7 +95,6 @@ export function MissingPersonForm({ open, onClose, onSave }: Props) {
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <fieldset disabled={isBusy} className="m-0 flex flex-col gap-4 border-0 p-0">
-            {/* Photo upload */}
             <div className="flex flex-col gap-2">
               <Label>Foto</Label>
               <label
@@ -113,13 +112,7 @@ export function MissingPersonForm({ open, onClose, onSave }: Props) {
                   </span>
                 )}
               </label>
-              <input
-                id="photo"
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={handleFile}
-              />
+              <input id="photo" type="file" accept="image/*" className="sr-only" onChange={handleFile} />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -153,7 +146,6 @@ export function MissingPersonForm({ open, onClose, onSave }: Props) {
               <Textarea id="notes" name="notes" placeholder="Ej: Visto en la iglesia. Vestía suéter rosado." />
             </div>
 
-            {/* Contacts */}
             <div className="flex flex-col gap-2">
               <Label>Números de contacto de emergencia</Label>
               {contacts.map((contact, i) => (

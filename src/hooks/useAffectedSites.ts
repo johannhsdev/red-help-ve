@@ -1,56 +1,24 @@
 import { useCallback, useEffect, useState } from "react"
-import type { AffectedSite, AffectedSiteDraft } from "../types/registry"
-import {
-  affectedSiteRowToRecord,
-  draftToAffectedSiteInsert,
-  type AffectedSiteRow,
-} from "../lib/registryMapper"
-import { supabase } from "../lib/supabase"
-import { validateAffectedSiteDraft, validateImageFile } from "../lib/registryValidation"
-
-function fileExtension(file: File) {
-  const fallback = file.type.split("/")[1] || "jpg"
-  return file.name.split(".").pop()?.toLowerCase() || fallback
-}
-
-async function uploadSitePhoto(file: File) {
-  validateImageFile(file)
-
-  const path = `${crypto.randomUUID()}.${fileExtension(file)}`
-  const { error } = await supabase.storage.from("affected-sites").upload(path, file, {
-    cacheControl: "31536000",
-    upsert: false,
-  })
-
-  if (error) throw new Error(`No se pudo subir la foto: ${error.message}`)
-
-  const { data } = supabase.storage.from("affected-sites").getPublicUrl(path)
-  return data.publicUrl
-}
+import type { IAffectedSite, IAffectedSiteDraft } from "../Interfaces/IAffectedSite"
+import { AffectedSiteList, AffectedSiteCreate } from "../Services/AffectedSiteService"
 
 export function useAffectedSites() {
-  const [sites, setSites] = useState<AffectedSite[]>([])
+  const [sites, setSites] = useState<IAffectedSite[]>([])
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState("")
 
   const loadSites = useCallback(async () => {
     setLoaded(false)
     setError("")
-
-    const { data, error: requestError } = await supabase
-      .from("affected_sites")
-      .select("*")
-      .order("created_at", { ascending: false })
-
-    if (requestError) {
-      setError(requestError.message)
+    try {
+      const data = await AffectedSiteList()
+      setSites(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cargar zonas afectadas.")
       setSites([])
+    } finally {
       setLoaded(true)
-      return
     }
-
-    setSites(((data ?? []) as AffectedSiteRow[]).map(affectedSiteRowToRecord))
-    setLoaded(true)
   }, [])
 
   useEffect(() => {
@@ -60,19 +28,8 @@ export function useAffectedSites() {
     return () => window.clearTimeout(timeout)
   }, [loadSites])
 
-  const addSite = useCallback(async (draft: AffectedSiteDraft, photoFile: File) => {
-    const cleanDraft = validateAffectedSiteDraft(draft)
-    const photoUrl = await uploadSitePhoto(photoFile)
-
-    const { data, error: insertError } = await supabase
-      .from("affected_sites")
-      .insert(draftToAffectedSiteInsert(cleanDraft, photoUrl))
-      .select("*")
-      .single()
-
-    if (insertError) throw new Error(insertError.message)
-
-    const next = affectedSiteRowToRecord(data as AffectedSiteRow)
+  const addSite = useCallback(async (draft: IAffectedSiteDraft, photoFile: File) => {
+    const next = await AffectedSiteCreate(draft, photoFile)
     setSites((current) => [next, ...current])
     return next
   }, [])

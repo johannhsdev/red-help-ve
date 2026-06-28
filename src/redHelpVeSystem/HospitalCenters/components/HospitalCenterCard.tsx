@@ -8,10 +8,10 @@ import {
   UserPlus,
   UsersRound,
 } from "lucide-react"
-import type { IHospitalCenter, IHospitalPatient, IHospitalPatientDraft } from "../../Interfaces/IHospitalCenter"
-import { Badge } from "../../components/ui/Badge"
-import { Button } from "../../components/ui/Button"
-import { Input, Label, Textarea } from "../../components/ui/Input"
+import type { IHospitalCenter, IHospitalPatient, IHospitalPatientDraft } from "../../../Interfaces/IHospitalCenter"
+import { Badge } from "../../../components/ui/Badge"
+import { Button } from "../../../components/ui/Button"
+import { Input, Label, Textarea } from "../../../components/ui/Input"
 
 type VerificationPatch = {
   verifiedInHospital?: boolean
@@ -166,16 +166,11 @@ export function HospitalCenterCard({
               const savingFamily = savingKey === `${patient.id}-foundByFamily`
 
               return (
-                <article
-                  key={patient.id}
-                  className="rounded-lg border border-white/[0.04] bg-[#171717] p-4"
-                >
+                <article key={patient.id} className="rounded-lg border border-white/[0.04] bg-[#171717] p-4">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-[var(--muted-foreground)]">
-                          {index + 1}-
-                        </span>
+                        <span className="text-sm font-semibold text-[var(--muted-foreground)]">{index + 1}-</span>
                         <h3 className="text-sm font-semibold text-white">{patient.name}</h3>
                         <Badge variant={patient.verifiedInHospital ? "found" : "missing"}>
                           {patient.verifiedInHospital ? "En hospital" : "Por verificar"}
@@ -198,17 +193,13 @@ export function HospitalCenterCard({
                           type="checkbox"
                           checked={patient.verifiedInHospital}
                           disabled={savingHospital || savingFamily}
-                          onChange={(e) =>
-                            void updateVerification(patient.id, "verifiedInHospital", e.target.checked)
-                          }
+                          onChange={(e) => void updateVerification(patient.id, "verifiedInHospital", e.target.checked)}
                           className="size-4 accent-green-500"
                         />
                         <span className="flex flex-col">
                           Verificado en hospital
                           {patient.verifiedAt && (
-                            <span className="text-xs text-[var(--muted-foreground)]">
-                              {formatDate(patient.verifiedAt)}
-                            </span>
+                            <span className="text-xs text-[var(--muted-foreground)]">{formatDate(patient.verifiedAt)}</span>
                           )}
                         </span>
                         {savingHospital && <Loader2 className="ml-auto size-4 animate-spin" />}
@@ -219,17 +210,13 @@ export function HospitalCenterCard({
                           type="checkbox"
                           checked={patient.foundByFamily}
                           disabled={savingHospital || savingFamily}
-                          onChange={(e) =>
-                            void updateVerification(patient.id, "foundByFamily", e.target.checked)
-                          }
+                          onChange={(e) => void updateVerification(patient.id, "foundByFamily", e.target.checked)}
                           className="size-4 accent-green-500"
                         />
                         <span className="flex flex-col">
                           Familia lo encontro
                           {patient.familyFoundAt && (
-                            <span className="text-xs text-[var(--muted-foreground)]">
-                              {formatDate(patient.familyFoundAt)}
-                            </span>
+                            <span className="text-xs text-[var(--muted-foreground)]">{formatDate(patient.familyFoundAt)}</span>
                           )}
                         </span>
                         {savingFamily && <Loader2 className="ml-auto size-4 animate-spin" />}
@@ -242,10 +229,7 @@ export function HospitalCenterCard({
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="mt-4 rounded-lg border border-dashed border-[var(--border)] bg-black/10 p-4"
-        >
+        <form onSubmit={handleSubmit} className="mt-4 rounded-lg border border-dashed border-[var(--border)] bg-black/10 p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
             <UserPlus className="size-4 text-sky-300" aria-hidden="true" />
             Agregar paciente a este centro
